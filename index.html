@@ -3978,7 +3978,7 @@
                     ws['F' + rowNum] = { v: '', t: 's', s: dataStyle };
                     ws['G' + rowNum] = { v: '', t: 's', s: dataStyle };
                     ws['H' + rowNum] = { v: '', t: 's', s: dataStyle };
-                    ws['I' + rowNum] = { v: segmentFuelCost, t: 'n', s: dataStyle };
+                    ws['I' + rowNum] = { v: '', t: 's', s: dataStyle };
                     ws['J' + rowNum] = { v: '', t: 's', s: dataStyle };
                     
                     dataRowCount++;
@@ -4000,20 +4000,19 @@
                     ws['F' + rowNum] = { v: '', t: 's', s: dataStyle };
                     ws['G' + rowNum] = { v: '', t: 's', s: dataStyle };
                     ws['H' + rowNum] = { v: '', t: 's', s: dataStyle };
-                    ws['I' + rowNum] = { v: fuelCostPerSegment, t: 'n', s: dataStyle };
+                    ws['I' + rowNum] = { v: '', t: 's', s: dataStyle };
                     ws['J' + rowNum] = { v: '', t: 's', s: dataStyle };
                     
                     dataRowCount++;
                 }
             }
 
-            // 마지막 데이터 행에 식비, 통행료, 기타 추가
+            // 마지막 데이터 행에 식비, 통행료, 기타 추가 (합계는 최종 합계 행에만 표시)
             if (dataRowCount > 0) {
                 const lastDataRow = dataStartRow + dataRowCount - 1;
                 if (result.mealFee > 0) ws['F' + lastDataRow] = { v: result.mealFee, t: 'n', s: dataStyle };
                 if (result.tollFee > 0) ws['G' + lastDataRow] = { v: result.tollFee, t: 'n', s: dataStyle };
                 if (result.otherFee > 0) ws['H' + lastDataRow] = { v: result.otherFee, t: 'n', s: dataStyle };
-                ws['I' + lastDataRow] = { v: totalFuelCost + result.mealFee + result.tollFee + result.otherFee, t: 'n', s: dataStyle };
             }
 
             // 빈 데이터 행 채우기
