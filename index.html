@@ -3932,8 +3932,8 @@
             ws['I3'] = { v: '담당SV', t: 's', s: { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: thinBorder } };
             
             // 행 3: 프로젝트명 + 면접원 정보
-            ws['A4'] = { v: `   프로젝트명(프로젝트번호) : ${result.projectName || ''} (${result.projectNumber || ''})`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
-            ws['E4'] = { v: `면접원 이름(면접원 ID): ${result.interviewerName || ''} (${result.interviewerId || ''})`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
+            ws['A4'] = { v: `   프로젝트명 : ${result.projectName || ''}`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
+            ws['E4'] = { v: `면접원 이름 : ${result.interviewerName || ''}( ${result.interviewerId || ''})`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
             
             // 행 5: 정산 확인 문구
             ws['A6'] = { v: `   ${year}년      ${monthNum}월  시외 교통비를 아래와 같이 정산함을 확인합니다.`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
