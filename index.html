@@ -3939,8 +3939,8 @@
             ws['A6'] = { v: `   ${year}년      ${monthNum}월  시외 교통비를 아래와 같이 정산함을 확인합니다.`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
             
             // 행 6-7: 테이블 헤더 (분홍색 배경)
-            const headers = ['날짜', '출발지', '도착지', '진행\n부수', '주행거리\n(km)', '식비', '통행료', '기타', '합 계', ''];
-            const subHeaders = ['', '', '', '', '', '', '용 무', '', '', ''];
+            const headers = ['날짜', '출발지', '도착지', '진행\n부수', '주행거리(km)', '식비', '통행료', '기타', '합 계', ''];
+            const subHeaders = ['', '', '', '', '네이버 지도로 검증', '', '용 무', '', '', ''];
             const cols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
             
             cols.forEach((col, i) => {
@@ -4026,18 +4026,9 @@
 
             // 합계 행 (행 33)
             const sumRow = dataStartRow + totalDataRows; // 33
-            
-            // 최종 도착지 찾기
-            let finalDestination = '';
-            if (segments.length > 0) {
-                finalDestination = segments[segments.length - 1].to;
-            } else if (coords.length >= 2) {
-                finalDestination = coords[coords.length - 1].name;
-            }
-            
             ws['A' + sumRow] = { v: '', t: 's', s: sumRowStyle };
             ws['B' + sumRow] = { v: '', t: 's', s: sumRowStyle };
-            ws['C' + sumRow] = { v: finalDestination, t: 's', s: sumRowStyle };
+            ws['C' + sumRow] = { v: '', t: 's', s: sumRowStyle };
             ws['D' + sumRow] = { v: '합계', t: 's', s: sumRowStyle };
             ws['E' + sumRow] = { v: parseFloat(result.distanceKm.toFixed(1)), t: 'n', s: sumRowStyle };
             ws['F' + sumRow] = { v: result.mealFee || 0, t: 'n', s: sumRowStyle };
@@ -4060,7 +4051,6 @@
                 { s: { r: 6, c: 1 }, e: { r: 7, c: 1 } }, // 출발지
                 { s: { r: 6, c: 2 }, e: { r: 7, c: 2 } }, // 도착지
                 { s: { r: 6, c: 3 }, e: { r: 7, c: 3 } }, // 진행부수
-                { s: { r: 6, c: 4 }, e: { r: 7, c: 4 } }, // 주행거리(km)
                 { s: { r: 6, c: 5 }, e: { r: 7, c: 5 } }, // 식비
                 { s: { r: 6, c: 6 }, e: { r: 7, c: 6 } }, // 통행료
                 { s: { r: 6, c: 7 }, e: { r: 7, c: 7 } }, // 기타
