@@ -4057,10 +4057,18 @@
             const centerAlign = { horizontal: "center", vertical: "center", wrapText: true, shrinkToFit: true };
             const leftAlign = { horizontal: "left", vertical: "center", shrinkToFit: true };
             
+            const mediumBorder = {
+                top: { style: "medium", color: { rgb: "000000" } },
+                bottom: { style: "medium", color: { rgb: "000000" } },
+                left: { style: "medium", color: { rgb: "000000" } },
+                right: { style: "medium", color: { rgb: "000000" } }
+            };
+            
             const titleStyle = {
                 font: { name: fontName, bold: true, sz: 16 },
                 alignment: { horizontal: "center", vertical: "center" },
-                fill: pinkBg
+                fill: pinkBg,
+                border: mediumBorder
             };
             
             const headerStyle = {
@@ -4090,12 +4098,12 @@
             // 행 1: 제목
             ws['A2'] = { v: '면접원 시외 교통비 정산표', t: 's', s: titleStyle };
             
-            // 행 2: 담당SV
-            ws['I3'] = { v: '담당SV', t: 's', s: { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: thinBorder } };
+            // 행 2: 담당SV (바깥 테두리)
+            ws['I3'] = { v: '담당SV', t: 's', s: { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: mediumBorder } };
             
             // 행 3: 프로젝트명 + 면접원 정보
             ws['A4'] = { v: `   프로젝트명 : ${result.projectName || ''}`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
-            ws['E4'] = { v: `면접원 이름 : ${result.interviewerName || ''}( ${result.interviewerId || ''})`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
+            ws['F4'] = { v: `면접원 이름 : ${result.interviewerName || ''}( ${result.interviewerId || ''})`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
             
             // 행 5: 정산 확인 문구
             ws['A6'] = { v: `   ${year}년      ${monthNum}월  시외 교통비를 아래와 같이 정산함을 확인합니다.`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
