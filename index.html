@@ -4249,6 +4249,10 @@
             ws['!rows'][1] = { hpt: 30 }; // 제목 행
             ws['!rows'][6] = { hpt: 28 }; // 헤더 행
             ws['!rows'][7] = { hpt: 22 }; // 서브헤더 행
+            // 데이터 행 높이 30으로 설정 (행 9~32, 인덱스 8~31)
+            for (let i = 8; i < sumRow; i++) {
+                ws['!rows'][i] = { hpt: 30 };
+            }
 
             // 워크북 생성
             const wb = XLSX.utils.book_new();
