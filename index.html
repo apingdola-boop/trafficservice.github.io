@@ -3694,16 +3694,19 @@
             const response = await fetch(url, {
                 headers: { 'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}` }
             });
-            
+
             if (!response.ok) {
                 throw new Error(`주소 검색 실패: ${query}`);
             }
-            
+
             const data = await response.json();
             if (data.documents && data.documents.length > 0) {
                 const place = data.documents[0];
+                // 도로명 주소 우선, 없으면 지번 주소, 그것도 없으면 장소명 사용
+                const roadAddress = place.road_address_name || place.address_name || place.place_name;
                 return {
-                    name: place.place_name,
+                    name: place.place_name,  // 화면 표시용 (장소명)
+                    roadAddress: roadAddress,  // 엑셀 출력용 (도로명 주소)
                     x: place.x,
                     y: place.y
                 };
@@ -3757,24 +3760,24 @@
         // 구간별 실제 거리 계산 (각 포인트 간 개별 API 호출)
         async function getSegmentDistances(coords) {
             const segments = [];
-            
+
             for (let i = 0; i < coords.length - 1; i++) {
                 const origin = coords[i];
                 const destination = coords[i + 1];
-                
+
                 try {
                     const route = await getRouteSingle(origin, destination, []);
                     segments.push({
-                        from: origin.name,
-                        to: destination.name,
+                        from: origin.roadAddress || origin.name,  // 도로명 주소 우선
+                        to: destination.roadAddress || destination.name,  // 도로명 주소 우선
                         distance: route.distance / 1000, // km로 변환
                         duration: route.duration
                     });
                 } catch (error) {
                     console.error(`구간 ${origin.name} → ${destination.name} 거리 계산 실패:`, error);
                     segments.push({
-                        from: origin.name,
-                        to: destination.name,
+                        from: origin.roadAddress || origin.name,
+                        to: destination.roadAddress || destination.name,
                         distance: 0,
                         duration: 0
                     });
@@ -4153,8 +4156,8 @@
                     totalFuelCost += fuelCostPerSegment;
                     
                     ws['A' + rowNum] = { v: isFirst ? dateStr : '', t: 's', s: dataStyle };
-                    ws['B' + rowNum] = { v: coords[i].name, t: 's', s: dataStyle };
-                    ws['C' + rowNum] = { v: coords[i + 1].name, t: 's', s: dataStyle };
+                    ws['B' + rowNum] = { v: coords[i].roadAddress || coords[i].name, t: 's', s: dataStyle };
+                    ws['C' + rowNum] = { v: coords[i + 1].roadAddress || coords[i + 1].name, t: 's', s: dataStyle };
                     ws['D' + rowNum] = { v: '', t: 's', s: dataStyle };
                     ws['E' + rowNum] = { v: Math.round(distancePerSegment), t: 'n', s: dataStyle };
                     ws['F' + rowNum] = { v: '', t: 's', s: dataStyle };
