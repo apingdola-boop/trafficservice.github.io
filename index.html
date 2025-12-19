@@ -4110,11 +4110,11 @@
                 ws[col + '8'] = { v: subHeaders[i], t: 's', s: headerStyle };
             });
             
-            // 데이터 행 추가 (행 9부터 시작, 총 24행)
+            // 데이터 행 추가 (행 9부터 시작, 총 18행 - A4 용지 맞춤)
             const segments = result.segmentDistances || [];
             const coords = result.coords || [];
             const segmentCount = segments.length;
-            const totalDataRows = 24;
+            const totalDataRows = 18;
             const dataStartRow = 9; // 엑셀 행 번호 (1-indexed)
             
             const dateStr = `${monthNum}/${dayNum}`;
