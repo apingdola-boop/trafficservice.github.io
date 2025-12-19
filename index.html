@@ -3935,10 +3935,10 @@
                 // 구간별 실제 거리 계산
                 const segmentDistances = await getSegmentDistances(coords);
                 
-                // 거리 (미터 → km) - 구간별 합계 사용
-                const distanceKm = segmentDistances.reduce((sum, seg) => sum + seg.distance, 0);
-                
-                // 비용 계산
+                // 거리 (미터 → km) - 구간별 합계 사용 (각 구간 반올림)
+                const distanceKm = segmentDistances.reduce((sum, seg) => sum + Math.round(seg.distance), 0);
+
+                // 비용 계산 (반올림된 km 기준)
                 const fuelCost = distanceKm * costPerKm;
                 const totalCost = fuelCost + tollFee + mealFee + otherFee;
 
@@ -4123,7 +4123,8 @@
             if (segmentCount > 0) {
                 for (let i = 0; i < segmentCount && dataRowCount < totalDataRows; i++) {
                     const segment = segments[i];
-                    const segmentFuelCost = Math.round(segment.distance * result.costPerKm);
+                    const roundedDistance = Math.round(segment.distance);
+                    const segmentFuelCost = roundedDistance * result.costPerKm;
                     const isFirst = i === 0;
                     const rowNum = dataStartRow + dataRowCount;
                     
@@ -4144,8 +4145,8 @@
                 }
             } else if (coords.length >= 2) {
                 for (let i = 0; i < coords.length - 1 && dataRowCount < totalDataRows; i++) {
-                    const distancePerSegment = result.distanceKm / (coords.length - 1);
-                    const fuelCostPerSegment = Math.round(result.fuelCost / (coords.length - 1));
+                    const distancePerSegment = Math.round(result.distanceKm / (coords.length - 1));
+                    const fuelCostPerSegment = distancePerSegment * result.costPerKm;
                     const isFirst = i === 0;
                     const rowNum = dataStartRow + dataRowCount;
                     
