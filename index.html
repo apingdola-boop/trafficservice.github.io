@@ -4314,11 +4314,8 @@
                 ws[col + '8'] = { v: subHeaders[i], t: 's', s: headerStyle };
             });
             
-            // 데이터 행 추가 (행 9부터 시작, 총 18행 - A4 용지 맞춤)
-            const totalDataRows = 18;
-            const dataStartRow = 9; // 엑셀 행 번호 (1-indexed)
-            
-            let dataRowCount = 0;
+            // 먼저 모든 데이터 행을 수집
+            const allDataRows = [];
             let grandTotalFuelCost = 0;
             let grandTotalMealFee = 0;
             let grandTotalTollFee = 0;
@@ -4328,10 +4325,8 @@
             // 누적 데이터가 있으면 누적 데이터 사용, 없으면 현재 결과만 사용
             const resultsToExport = accumulatedResults.length > 0 ? accumulatedResults : [result];
             
-            // 각 결과 데이터 채우기
+            // 각 결과에서 데이터 행 수집
             for (const res of resultsToExport) {
-                if (dataRowCount >= totalDataRows) break;
-                
                 const resMonthNum = parseInt((res.date || '').match(/(\d+)월/)?.[1]) || monthNum;
                 const resDayNum = parseInt((res.date || '').match(/(\d+)일/)?.[1]) || dayNum;
                 const dateStr = `${resMonthNum}/${resDayNum}`;
@@ -4340,149 +4335,162 @@
                 const coords = res.coords || [];
                 let dayFuelCost = 0;
                 let isFirstOfDay = true;
+                const dayRows = [];
                 
                 if (segments.length > 0) {
-                    for (let i = 0; i < segments.length && dataRowCount < totalDataRows; i++) {
+                    for (let i = 0; i < segments.length; i++) {
                         const segment = segments[i];
                         const roundedDistance = Math.round(segment.distance);
-                        const segmentFuelCost = roundedDistance * res.costPerKm;
-                        const rowNum = dataStartRow + dataRowCount;
-                        
-                        dayFuelCost += segmentFuelCost;
+                        dayFuelCost += roundedDistance * res.costPerKm;
                         grandTotalDistance += roundedDistance;
                         
-                        ws['A' + rowNum] = { v: isFirstOfDay ? dateStr : '', t: 's', s: dataStyle };
-                        ws['B' + rowNum] = { v: segment.from, t: 's', s: dataStyle };
-                        ws['C' + rowNum] = { v: segment.to, t: 's', s: dataStyle };
-                        ws['D' + rowNum] = { v: '', t: 's', s: dataStyle };
-                        ws['E' + rowNum] = { v: roundedDistance, t: 'n', s: dataStyle };
-                        ws['F' + rowNum] = { v: '', t: 's', s: dataStyle };
-                        ws['G' + rowNum] = { v: '', t: 's', s: dataStyle };
-                        ws['H' + rowNum] = { v: '', t: 's', s: dataStyle };
-                        ws['I' + rowNum] = { v: '', t: 's', s: dataStyle };
-                        ws['J' + rowNum] = { v: '', t: 's', s: dataStyle };
-                        
+                        dayRows.push({
+                            date: isFirstOfDay ? dateStr : '',
+                            from: segment.from,
+                            to: segment.to,
+                            distance: roundedDistance,
+                            mealFee: 0, tollFee: 0, otherFee: 0, total: 0
+                        });
                         isFirstOfDay = false;
-                        dataRowCount++;
                     }
                 } else if (coords.length >= 2) {
-                    for (let i = 0; i < coords.length - 1 && dataRowCount < totalDataRows; i++) {
+                    for (let i = 0; i < coords.length - 1; i++) {
                         const distancePerSegment = Math.round(res.distanceKm / (coords.length - 1));
-                        const fuelCostPerSegment = distancePerSegment * res.costPerKm;
-                        const rowNum = dataStartRow + dataRowCount;
-                        
-                        dayFuelCost += fuelCostPerSegment;
+                        dayFuelCost += distancePerSegment * res.costPerKm;
                         grandTotalDistance += distancePerSegment;
                         
-                        ws['A' + rowNum] = { v: isFirstOfDay ? dateStr : '', t: 's', s: dataStyle };
-                        ws['B' + rowNum] = { v: coords[i].roadAddress || coords[i].name, t: 's', s: dataStyle };
-                        ws['C' + rowNum] = { v: coords[i + 1].roadAddress || coords[i + 1].name, t: 's', s: dataStyle };
-                        ws['D' + rowNum] = { v: '', t: 's', s: dataStyle };
-                        ws['E' + rowNum] = { v: distancePerSegment, t: 'n', s: dataStyle };
-                        ws['F' + rowNum] = { v: '', t: 's', s: dataStyle };
-                        ws['G' + rowNum] = { v: '', t: 's', s: dataStyle };
-                        ws['H' + rowNum] = { v: '', t: 's', s: dataStyle };
-                        ws['I' + rowNum] = { v: '', t: 's', s: dataStyle };
-                        ws['J' + rowNum] = { v: '', t: 's', s: dataStyle };
-                        
+                        dayRows.push({
+                            date: isFirstOfDay ? dateStr : '',
+                            from: coords[i].roadAddress || coords[i].name,
+                            to: coords[i + 1].roadAddress || coords[i + 1].name,
+                            distance: distancePerSegment,
+                            mealFee: 0, tollFee: 0, otherFee: 0, total: 0
+                        });
                         isFirstOfDay = false;
-                        dataRowCount++;
                     }
                 }
                 
-                // 각 날짜의 마지막 행에 식비, 통행료, 기타, 유류비 합계 추가
-                if (dataRowCount > 0) {
-                    const lastDayRow = dataStartRow + dataRowCount - 1;
-                    if (res.mealFee > 0) ws['F' + lastDayRow] = { v: res.mealFee, t: 'n', s: dataStyle };
-                    if (res.tollFee > 0) ws['G' + lastDayRow] = { v: res.tollFee, t: 'n', s: dataStyle };
-                    if (res.otherFee > 0) ws['H' + lastDayRow] = { v: res.otherFee, t: 'n', s: dataStyle };
-                    ws['I' + lastDayRow] = { v: dayFuelCost + res.mealFee + res.tollFee + res.otherFee, t: 'n', s: dataStyle };
+                if (dayRows.length > 0) {
+                    const lastRow = dayRows[dayRows.length - 1];
+                    lastRow.mealFee = res.mealFee || 0;
+                    lastRow.tollFee = res.tollFee || 0;
+                    lastRow.otherFee = res.otherFee || 0;
+                    lastRow.total = dayFuelCost + (res.mealFee || 0) + (res.tollFee || 0) + (res.otherFee || 0);
                 }
                 
+                allDataRows.push(...dayRows);
                 grandTotalFuelCost += dayFuelCost;
                 grandTotalMealFee += res.mealFee || 0;
                 grandTotalTollFee += res.tollFee || 0;
                 grandTotalOtherFee += res.otherFee || 0;
             }
-
-            // 빈 데이터 행 채우기
-            for (let i = dataRowCount; i < totalDataRows; i++) {
-                const rowNum = dataStartRow + i;
-                cols.forEach(col => {
-                    ws[col + rowNum] = { v: '', t: 's', s: dataStyle };
-                });
-            }
-
-            // 합계 행 (행 33)
-            const sumRow = dataStartRow + totalDataRows; // 27
-            const grandTotal = grandTotalFuelCost + grandTotalMealFee + grandTotalTollFee + grandTotalOtherFee;
-            ws['A' + sumRow] = { v: '', t: 's', s: sumRowStyle };
-            ws['B' + sumRow] = { v: '', t: 's', s: sumRowStyle };
-            ws['C' + sumRow] = { v: '', t: 's', s: sumRowStyle };
-            ws['D' + sumRow] = { v: '합계', t: 's', s: sumRowStyle };
-            ws['E' + sumRow] = { v: grandTotalDistance, t: 'n', s: sumRowStyle };
-            ws['F' + sumRow] = { v: grandTotalMealFee, t: 'n', s: sumRowStyle };
-            ws['G' + sumRow] = { v: grandTotalTollFee, t: 'n', s: sumRowStyle };
-            ws['H' + sumRow] = { v: grandTotalOtherFee, t: 'n', s: sumRowStyle };
-            ws['I' + sumRow] = { v: grandTotal, t: 'n', s: sumRowStyle };
-            ws['J' + sumRow] = { v: '', t: 's', s: sumRowStyle };
             
-            // 범위 설정
-            ws['!ref'] = 'A1:J' + sumRow;
-            
-            // 셀 병합 설정
-            ws['!merges'] = [
-                // 제목 (A2:J2)
-                { s: { r: 1, c: 0 }, e: { r: 1, c: 9 } },
-                // 담당SV (I3:J3)
-                { s: { r: 2, c: 8 }, e: { r: 2, c: 9 } },
-                // 헤더 병합 (행 7-8)
-                { s: { r: 6, c: 0 }, e: { r: 7, c: 0 } }, // 날짜
-                { s: { r: 6, c: 1 }, e: { r: 7, c: 1 } }, // 출발지
-                { s: { r: 6, c: 2 }, e: { r: 7, c: 2 } }, // 도착지
-                { s: { r: 6, c: 3 }, e: { r: 7, c: 3 } }, // 진행부수
-                { s: { r: 6, c: 4 }, e: { r: 7, c: 4 } }, // 주행거리(km)
-                { s: { r: 6, c: 5 }, e: { r: 7, c: 5 } }, // 식비
-                { s: { r: 6, c: 6 }, e: { r: 7, c: 6 } }, // 통행료
-                { s: { r: 6, c: 7 }, e: { r: 7, c: 7 } }, // 기타
-                { s: { r: 6, c: 8 }, e: { r: 7, c: 9 } }, // 합계
-            ];
-            
-            // 데이터 행 및 합계 행의 I:J 병합 (행 9~33, 0-indexed: 8~32)
-            for (let r = 8; r <= sumRow - 1; r++) {
-                ws['!merges'].push({ s: { r: r, c: 8 }, e: { r: r, c: 9 } });
-            }
-            
-            // 열 너비 설정
-            ws['!cols'] = [
-                { wch: 8 },   // A: 날짜
-                { wch: 14 },  // B: 출발지
-                { wch: 14 },  // C: 도착지
-                { wch: 6 },   // D: 진행부수
-                { wch: 15 },  // E: 주행거리
-                { wch: 7 },   // F: 식비
-                { wch: 8 },   // G: 통행료
-                { wch: 7 },   // H: 기타
-                { wch: 9 },   // I: 합계
-                { wch: 3 }    // J: 병합용
-            ];
-
-            // 행 높이 설정
-            ws['!rows'] = [];
-            for (let i = 0; i <= sumRow; i++) {
-                ws['!rows'][i] = { hpt: 20 };
-            }
-            ws['!rows'][1] = { hpt: 30 }; // 제목 행
-            ws['!rows'][6] = { hpt: 28 }; // 헤더 행
-            ws['!rows'][7] = { hpt: 22 }; // 서브헤더 행
-            // 데이터 행 높이 30으로 설정 (행 9~32, 인덱스 8~31)
-            for (let i = 8; i < sumRow; i++) {
-                ws['!rows'][i] = { hpt: 30 };
-            }
-
-            // 워크북 생성
+            // 18행 단위로 시트 분할
+            const totalDataRows = 18;
+            const dataStartRow = 9;
+            const totalSheets = Math.ceil(allDataRows.length / totalDataRows) || 1;
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, '면접원 경비 정산표');
+            
+            for (let sheetIdx = 0; sheetIdx < totalSheets; sheetIdx++) {
+                const sheetWs = {};
+                const startIdx = sheetIdx * totalDataRows;
+                const endIdx = Math.min(startIdx + totalDataRows, allDataRows.length);
+                const sheetData = allDataRows.slice(startIdx, endIdx);
+                const isLastSheet = sheetIdx === totalSheets - 1;
+                
+                // 제목
+                sheetWs['A2'] = { v: '면접원 시외 교통비 정산표', t: 's', s: titleStyle };
+                
+                // 담당SV 행
+                ['A3', 'B3', 'C3', 'D3', 'E3', 'F3', 'G3', 'H3'].forEach(cell => {
+                    sheetWs[cell] = { v: '', t: 's', s: noBorderStyle };
+                });
+                sheetWs['I3'] = { v: '담당SV', t: 's', s: { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: mediumBorder } };
+                
+                // 프로젝트명 + 면접원 정보
+                sheetWs['A4'] = { v: `   프로젝트명 : ${result.projectName || ''}`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
+                sheetWs['F4'] = { v: `면접원 이름 : ${result.interviewerName || ''}( ${result.interviewerId || ''})`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
+                
+                // 정산 확인 문구
+                sheetWs['A6'] = { v: `   ${year}년      ${monthNum}월  시외 교통비를 아래와 같이 정산함을 확인합니다.`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
+                
+                // 테이블 헤더
+                cols.forEach((col, i) => {
+                    sheetWs[col + '7'] = { v: headers[i], t: 's', s: headerStyle };
+                    sheetWs[col + '8'] = { v: subHeaders[i], t: 's', s: headerStyle };
+                });
+                
+                // 데이터 행 채우기
+                let dataRowCount = 0;
+                for (const row of sheetData) {
+                    const rowNum = dataStartRow + dataRowCount;
+                    sheetWs['A' + rowNum] = { v: row.date, t: 's', s: dataStyle };
+                    sheetWs['B' + rowNum] = { v: row.from, t: 's', s: dataStyle };
+                    sheetWs['C' + rowNum] = { v: row.to, t: 's', s: dataStyle };
+                    sheetWs['D' + rowNum] = { v: '', t: 's', s: dataStyle };
+                    sheetWs['E' + rowNum] = { v: row.distance, t: 'n', s: dataStyle };
+                    sheetWs['F' + rowNum] = { v: row.mealFee > 0 ? row.mealFee : '', t: row.mealFee > 0 ? 'n' : 's', s: dataStyle };
+                    sheetWs['G' + rowNum] = { v: row.tollFee > 0 ? row.tollFee : '', t: row.tollFee > 0 ? 'n' : 's', s: dataStyle };
+                    sheetWs['H' + rowNum] = { v: row.otherFee > 0 ? row.otherFee : '', t: row.otherFee > 0 ? 'n' : 's', s: dataStyle };
+                    sheetWs['I' + rowNum] = { v: row.total > 0 ? row.total : '', t: row.total > 0 ? 'n' : 's', s: dataStyle };
+                    sheetWs['J' + rowNum] = { v: '', t: 's', s: dataStyle };
+                    dataRowCount++;
+                }
+                
+                // 빈 데이터 행 채우기
+                for (let i = dataRowCount; i < totalDataRows; i++) {
+                    const rowNum = dataStartRow + i;
+                    cols.forEach(col => {
+                        sheetWs[col + rowNum] = { v: '', t: 's', s: dataStyle };
+                    });
+                }
+                
+                // 합계 행
+                const sumRow = dataStartRow + totalDataRows;
+                const grandTotal = grandTotalFuelCost + grandTotalMealFee + grandTotalTollFee + grandTotalOtherFee;
+                sheetWs['A' + sumRow] = { v: '', t: 's', s: sumRowStyle };
+                sheetWs['B' + sumRow] = { v: '', t: 's', s: sumRowStyle };
+                sheetWs['C' + sumRow] = { v: '', t: 's', s: sumRowStyle };
+                sheetWs['D' + sumRow] = { v: '합계', t: 's', s: sumRowStyle };
+                sheetWs['E' + sumRow] = { v: isLastSheet ? grandTotalDistance : '', t: isLastSheet ? 'n' : 's', s: sumRowStyle };
+                sheetWs['F' + sumRow] = { v: isLastSheet ? grandTotalMealFee : '', t: isLastSheet ? 'n' : 's', s: sumRowStyle };
+                sheetWs['G' + sumRow] = { v: isLastSheet ? grandTotalTollFee : '', t: isLastSheet ? 'n' : 's', s: sumRowStyle };
+                sheetWs['H' + sumRow] = { v: isLastSheet ? grandTotalOtherFee : '', t: isLastSheet ? 'n' : 's', s: sumRowStyle };
+                sheetWs['I' + sumRow] = { v: isLastSheet ? grandTotal : '', t: isLastSheet ? 'n' : 's', s: sumRowStyle };
+                sheetWs['J' + sumRow] = { v: '', t: 's', s: sumRowStyle };
+                
+                // 범위/병합/열너비/행높이 설정
+                sheetWs['!ref'] = 'A1:J' + sumRow;
+                sheetWs['!merges'] = [
+                    { s: { r: 1, c: 0 }, e: { r: 1, c: 9 } },
+                    { s: { r: 2, c: 8 }, e: { r: 2, c: 9 } },
+                    { s: { r: 6, c: 0 }, e: { r: 7, c: 0 } },
+                    { s: { r: 6, c: 1 }, e: { r: 7, c: 1 } },
+                    { s: { r: 6, c: 2 }, e: { r: 7, c: 2 } },
+                    { s: { r: 6, c: 3 }, e: { r: 7, c: 3 } },
+                    { s: { r: 6, c: 4 }, e: { r: 7, c: 4 } },
+                    { s: { r: 6, c: 5 }, e: { r: 7, c: 5 } },
+                    { s: { r: 6, c: 6 }, e: { r: 7, c: 6 } },
+                    { s: { r: 6, c: 7 }, e: { r: 7, c: 7 } },
+                    { s: { r: 6, c: 8 }, e: { r: 7, c: 9 } },
+                ];
+                for (let r = 8; r <= sumRow - 1; r++) {
+                    sheetWs['!merges'].push({ s: { r: r, c: 8 }, e: { r: r, c: 9 } });
+                }
+                sheetWs['!cols'] = [
+                    { wch: 8 }, { wch: 14 }, { wch: 14 }, { wch: 6 }, { wch: 15 },
+                    { wch: 7 }, { wch: 8 }, { wch: 7 }, { wch: 9 }, { wch: 3 }
+                ];
+                sheetWs['!rows'] = [];
+                for (let i = 0; i <= sumRow; i++) sheetWs['!rows'][i] = { hpt: 20 };
+                sheetWs['!rows'][1] = { hpt: 30 };
+                sheetWs['!rows'][6] = { hpt: 28 };
+                sheetWs['!rows'][7] = { hpt: 22 };
+                for (let i = 8; i < sumRow; i++) sheetWs['!rows'][i] = { hpt: 30 };
+                
+                const sheetName = totalSheets > 1 ? `정산표 ${sheetIdx + 1}` : '면접원 경비 정산표';
+                XLSX.utils.book_append_sheet(wb, sheetWs, sheetName);
+            }
 
             // 파일명 생성
             const projectNumForFile = result.projectNumber || '프로젝트';
