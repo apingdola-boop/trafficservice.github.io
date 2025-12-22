@@ -4474,8 +4474,11 @@
                 // 범위/병합/열너비/행높이 설정
                 sheetWs['!ref'] = 'A1:J' + sumRow;
                 sheetWs['!merges'] = [
-                    { s: { r: 1, c: 0 }, e: { r: 1, c: 9 } },
-                    { s: { r: 2, c: 8 }, e: { r: 2, c: 9 } },
+                    { s: { r: 1, c: 0 }, e: { r: 1, c: 9 } },  // 제목 A2:J2
+                    { s: { r: 2, c: 8 }, e: { r: 2, c: 9 } },  // 담당SV I3:J3
+                    { s: { r: 3, c: 0 }, e: { r: 3, c: 4 } },  // 프로젝트명 A4:E4
+                    { s: { r: 3, c: 5 }, e: { r: 3, c: 9 } },  // 면접원 이름 F4:J4
+                    { s: { r: 5, c: 0 }, e: { r: 5, c: 9 } },  // 정산 확인 문구 A6:J6
                     { s: { r: 6, c: 0 }, e: { r: 7, c: 0 } },
                     { s: { r: 6, c: 1 }, e: { r: 7, c: 1 } },
                     { s: { r: 6, c: 2 }, e: { r: 7, c: 2 } },
@@ -4490,8 +4493,16 @@
                     sheetWs['!merges'].push({ s: { r: r, c: 8 }, e: { r: r, c: 9 } });
                 }
                 sheetWs['!cols'] = [
-                    { wch: 8 }, { wch: 14 }, { wch: 14 }, { wch: 6 }, { wch: 15 },
-                    { wch: 7 }, { wch: 8 }, { wch: 7 }, { wch: 9 }, { wch: 3 }
+                    { wch: 8 },   // A: 날짜
+                    { wch: 18 },  // B: 출발지 (넓게)
+                    { wch: 18 },  // C: 도착지 (넓게)
+                    { wch: 6 },   // D: 진행부수
+                    { wch: 10 },  // E: 주행거리
+                    { wch: 8 },   // F: 식비
+                    { wch: 8 },   // G: 통행료
+                    { wch: 8 },   // H: 기타
+                    { wch: 10 },  // I: 합계
+                    { wch: 3 }    // J: 병합용
                 ];
                 sheetWs['!rows'] = [];
                 for (let i = 0; i <= sumRow; i++) sheetWs['!rows'][i] = { hpt: 20 };
