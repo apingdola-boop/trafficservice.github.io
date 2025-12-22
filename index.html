@@ -1128,6 +1128,114 @@
             margin-top: 20px;
         }
 
+        /* 추가하기 버튼 */
+        .add-btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #007bff, #00d4ff);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 500;
+            font-family: inherit;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .add-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 123, 255, 0.4);
+        }
+
+        /* 누적 목록 스타일 */
+        .accumulated-list {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 10px;
+        }
+
+        .accumulated-list-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .accumulated-list-title .clear-all-btn {
+            font-size: 0.8rem;
+            color: var(--error-red);
+            cursor: pointer;
+            opacity: 0.8;
+        }
+
+        .accumulated-list-title .clear-all-btn:hover {
+            opacity: 1;
+        }
+
+        .accumulated-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .accumulated-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .accumulated-item-info {
+            flex: 1;
+        }
+
+        .accumulated-item-date {
+            color: var(--accent-yellow);
+            font-weight: 500;
+        }
+
+        .accumulated-item-route {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .accumulated-item-cost {
+            color: var(--accent-cyan);
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        .accumulated-item-remove {
+            color: var(--error-red);
+            cursor: pointer;
+            font-size: 1.1rem;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .accumulated-item-remove:hover {
+            opacity: 1;
+        }
+
+        .accumulated-total {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: right;
+            font-weight: 600;
+            color: var(--accent-magenta);
+        }
+
         /* 선택 알림 토스트 */
         .toast {
             position: fixed;
@@ -1365,9 +1473,21 @@
                     <a class="kakao-link" id="kakao-navi-link" href="#" target="_blank">
                         🗺️ 카카오맵에서 경로 보기
                     </a>
+                    <button class="add-btn" onclick="addToAccumulated()">
+                        ➕ 추가하기
+                    </button>
                     <button class="export-btn" onclick="exportToExcel()">
                         📊 엑셀로 내보내기
                     </button>
+                </div>
+
+                <div class="accumulated-list" id="accumulated-list" style="display: none;">
+                    <div class="accumulated-list-title">
+                        <span>📋 누적 목록</span>
+                        <span class="clear-all-btn" onclick="clearAllAccumulated()">전체 삭제</span>
+                    </div>
+                    <div id="accumulated-items"></div>
+                    <div class="accumulated-total" id="accumulated-total"></div>
                 </div>
 
                 <div class="info-note">
@@ -3374,7 +3494,10 @@
         
         // 마지막 계산 결과 저장 (엑셀 내보내기용)
         let lastCalculationResult = null;
-        
+
+        // 누적된 계산 결과 저장
+        let accumulatedResults = [];
+
         // 선택된 면접원 정보 저장
         let selectedInterviewer = {
             id: '',
@@ -4029,6 +4152,75 @@
             errorEl.classList.add('show');
         }
 
+        // 누적 목록에 추가
+        function addToAccumulated() {
+            if (!lastCalculationResult) {
+                alert('먼저 경로를 계산해주세요.');
+                return;
+            }
+
+            // 결과 복사해서 누적 목록에 추가
+            const resultCopy = JSON.parse(JSON.stringify(lastCalculationResult));
+            resultCopy.id = Date.now(); // 고유 ID 부여
+            accumulatedResults.push(resultCopy);
+
+            // 누적 목록 화면 업데이트
+            renderAccumulatedList();
+
+            // 토스트 알림
+            showToast(`✅ ${resultCopy.date} 데이터가 추가되었습니다!`, 'start');
+        }
+
+        // 누적 목록 렌더링
+        function renderAccumulatedList() {
+            const listContainer = document.getElementById('accumulated-list');
+            const itemsContainer = document.getElementById('accumulated-items');
+            const totalContainer = document.getElementById('accumulated-total');
+
+            if (accumulatedResults.length === 0) {
+                listContainer.style.display = 'none';
+                return;
+            }
+
+            listContainer.style.display = 'block';
+
+            // 아이템 렌더링
+            itemsContainer.innerHTML = accumulatedResults.map((result, index) => {
+                const startPoint = result.segmentDistances?.[0]?.from || result.coords?.[0]?.name || '';
+                const endPoint = result.segmentDistances?.[result.segmentDistances.length - 1]?.to || 
+                                 result.coords?.[result.coords.length - 1]?.name || '';
+                return `
+                    <div class="accumulated-item">
+                        <div class="accumulated-item-info">
+                            <span class="accumulated-item-date">${result.date}</span>
+                            <div class="accumulated-item-route">${startPoint} → ${endPoint} (${Math.round(result.distanceKm)}km)</div>
+                        </div>
+                        <span class="accumulated-item-cost">${result.totalCost.toLocaleString()}원</span>
+                        <span class="accumulated-item-remove" onclick="removeAccumulated(${result.id})">✕</span>
+                    </div>
+                `;
+            }).join('');
+
+            // 총합 계산
+            const totalCost = accumulatedResults.reduce((sum, r) => sum + r.totalCost, 0);
+            const totalKm = accumulatedResults.reduce((sum, r) => sum + r.distanceKm, 0);
+            totalContainer.innerHTML = `총 ${accumulatedResults.length}건 | ${Math.round(totalKm)}km | <span style="color: var(--accent-cyan);">${totalCost.toLocaleString()}원</span>`;
+        }
+
+        // 누적 목록에서 삭제
+        function removeAccumulated(id) {
+            accumulatedResults = accumulatedResults.filter(r => r.id !== id);
+            renderAccumulatedList();
+        }
+
+        // 누적 목록 전체 삭제
+        function clearAllAccumulated() {
+            if (confirm('누적된 모든 데이터를 삭제하시겠습니까?')) {
+                accumulatedResults = [];
+                renderAccumulatedList();
+            }
+        }
+
         // 엑셀로 내보내기 (면접원 시외 교통비 정산표 양식 - A4 형식, 스타일 포함)
         function exportToExcel() {
             if (!lastCalculationResult) {
@@ -4119,73 +4311,94 @@
             });
             
             // 데이터 행 추가 (행 9부터 시작, 총 18행 - A4 용지 맞춤)
-            const segments = result.segmentDistances || [];
-            const coords = result.coords || [];
-            const segmentCount = segments.length;
             const totalDataRows = 18;
             const dataStartRow = 9; // 엑셀 행 번호 (1-indexed)
             
-            const dateStr = `${monthNum}/${dayNum}`;
-            
             let dataRowCount = 0;
-            let totalFuelCost = 0;
+            let grandTotalFuelCost = 0;
+            let grandTotalMealFee = 0;
+            let grandTotalTollFee = 0;
+            let grandTotalOtherFee = 0;
+            let grandTotalDistance = 0;
             
-            // 데이터 채우기
-            if (segmentCount > 0) {
-                for (let i = 0; i < segmentCount && dataRowCount < totalDataRows; i++) {
-                    const segment = segments[i];
-                    const roundedDistance = Math.round(segment.distance);
-                    const segmentFuelCost = roundedDistance * result.costPerKm;
-                    const isFirst = i === 0;
-                    const rowNum = dataStartRow + dataRowCount;
-                    
-                    totalFuelCost += segmentFuelCost;
-                    
-                    ws['A' + rowNum] = { v: isFirst ? dateStr : '', t: 's', s: dataStyle };
-                    ws['B' + rowNum] = { v: segment.from, t: 's', s: dataStyle };
-                    ws['C' + rowNum] = { v: segment.to, t: 's', s: dataStyle };
-                    ws['D' + rowNum] = { v: '', t: 's', s: dataStyle };
-                    ws['E' + rowNum] = { v: Math.round(segment.distance), t: 'n', s: dataStyle };
-                    ws['F' + rowNum] = { v: '', t: 's', s: dataStyle };
-                    ws['G' + rowNum] = { v: '', t: 's', s: dataStyle };
-                    ws['H' + rowNum] = { v: '', t: 's', s: dataStyle };
-                    ws['I' + rowNum] = { v: '', t: 's', s: dataStyle };
-                    ws['J' + rowNum] = { v: '', t: 's', s: dataStyle };
-                    
-                    dataRowCount++;
+            // 누적 데이터가 있으면 누적 데이터 사용, 없으면 현재 결과만 사용
+            const resultsToExport = accumulatedResults.length > 0 ? accumulatedResults : [result];
+            
+            // 각 결과 데이터 채우기
+            for (const res of resultsToExport) {
+                if (dataRowCount >= totalDataRows) break;
+                
+                const resMonthNum = parseInt((res.date || '').match(/(\d+)월/)?.[1]) || monthNum;
+                const resDayNum = parseInt((res.date || '').match(/(\d+)일/)?.[1]) || dayNum;
+                const dateStr = `${resMonthNum}/${resDayNum}`;
+                
+                const segments = res.segmentDistances || [];
+                const coords = res.coords || [];
+                let dayFuelCost = 0;
+                let isFirstOfDay = true;
+                
+                if (segments.length > 0) {
+                    for (let i = 0; i < segments.length && dataRowCount < totalDataRows; i++) {
+                        const segment = segments[i];
+                        const roundedDistance = Math.round(segment.distance);
+                        const segmentFuelCost = roundedDistance * res.costPerKm;
+                        const rowNum = dataStartRow + dataRowCount;
+                        
+                        dayFuelCost += segmentFuelCost;
+                        grandTotalDistance += roundedDistance;
+                        
+                        ws['A' + rowNum] = { v: isFirstOfDay ? dateStr : '', t: 's', s: dataStyle };
+                        ws['B' + rowNum] = { v: segment.from, t: 's', s: dataStyle };
+                        ws['C' + rowNum] = { v: segment.to, t: 's', s: dataStyle };
+                        ws['D' + rowNum] = { v: '', t: 's', s: dataStyle };
+                        ws['E' + rowNum] = { v: roundedDistance, t: 'n', s: dataStyle };
+                        ws['F' + rowNum] = { v: '', t: 's', s: dataStyle };
+                        ws['G' + rowNum] = { v: '', t: 's', s: dataStyle };
+                        ws['H' + rowNum] = { v: '', t: 's', s: dataStyle };
+                        ws['I' + rowNum] = { v: '', t: 's', s: dataStyle };
+                        ws['J' + rowNum] = { v: '', t: 's', s: dataStyle };
+                        
+                        isFirstOfDay = false;
+                        dataRowCount++;
+                    }
+                } else if (coords.length >= 2) {
+                    for (let i = 0; i < coords.length - 1 && dataRowCount < totalDataRows; i++) {
+                        const distancePerSegment = Math.round(res.distanceKm / (coords.length - 1));
+                        const fuelCostPerSegment = distancePerSegment * res.costPerKm;
+                        const rowNum = dataStartRow + dataRowCount;
+                        
+                        dayFuelCost += fuelCostPerSegment;
+                        grandTotalDistance += distancePerSegment;
+                        
+                        ws['A' + rowNum] = { v: isFirstOfDay ? dateStr : '', t: 's', s: dataStyle };
+                        ws['B' + rowNum] = { v: coords[i].roadAddress || coords[i].name, t: 's', s: dataStyle };
+                        ws['C' + rowNum] = { v: coords[i + 1].roadAddress || coords[i + 1].name, t: 's', s: dataStyle };
+                        ws['D' + rowNum] = { v: '', t: 's', s: dataStyle };
+                        ws['E' + rowNum] = { v: distancePerSegment, t: 'n', s: dataStyle };
+                        ws['F' + rowNum] = { v: '', t: 's', s: dataStyle };
+                        ws['G' + rowNum] = { v: '', t: 's', s: dataStyle };
+                        ws['H' + rowNum] = { v: '', t: 's', s: dataStyle };
+                        ws['I' + rowNum] = { v: '', t: 's', s: dataStyle };
+                        ws['J' + rowNum] = { v: '', t: 's', s: dataStyle };
+                        
+                        isFirstOfDay = false;
+                        dataRowCount++;
+                    }
                 }
-            } else if (coords.length >= 2) {
-                for (let i = 0; i < coords.length - 1 && dataRowCount < totalDataRows; i++) {
-                    const distancePerSegment = Math.round(result.distanceKm / (coords.length - 1));
-                    const fuelCostPerSegment = distancePerSegment * result.costPerKm;
-                    const isFirst = i === 0;
-                    const rowNum = dataStartRow + dataRowCount;
-                    
-                    totalFuelCost += fuelCostPerSegment;
-                    
-                    ws['A' + rowNum] = { v: isFirst ? dateStr : '', t: 's', s: dataStyle };
-                    ws['B' + rowNum] = { v: coords[i].roadAddress || coords[i].name, t: 's', s: dataStyle };
-                    ws['C' + rowNum] = { v: coords[i + 1].roadAddress || coords[i + 1].name, t: 's', s: dataStyle };
-                    ws['D' + rowNum] = { v: '', t: 's', s: dataStyle };
-                    ws['E' + rowNum] = { v: Math.round(distancePerSegment), t: 'n', s: dataStyle };
-                    ws['F' + rowNum] = { v: '', t: 's', s: dataStyle };
-                    ws['G' + rowNum] = { v: '', t: 's', s: dataStyle };
-                    ws['H' + rowNum] = { v: '', t: 's', s: dataStyle };
-                    ws['I' + rowNum] = { v: '', t: 's', s: dataStyle };
-                    ws['J' + rowNum] = { v: '', t: 's', s: dataStyle };
-                    
-                    dataRowCount++;
+                
+                // 각 날짜의 마지막 행에 식비, 통행료, 기타, 유류비 합계 추가
+                if (dataRowCount > 0) {
+                    const lastDayRow = dataStartRow + dataRowCount - 1;
+                    if (res.mealFee > 0) ws['F' + lastDayRow] = { v: res.mealFee, t: 'n', s: dataStyle };
+                    if (res.tollFee > 0) ws['G' + lastDayRow] = { v: res.tollFee, t: 'n', s: dataStyle };
+                    if (res.otherFee > 0) ws['H' + lastDayRow] = { v: res.otherFee, t: 'n', s: dataStyle };
+                    ws['I' + lastDayRow] = { v: dayFuelCost + res.mealFee + res.tollFee + res.otherFee, t: 'n', s: dataStyle };
                 }
-            }
-
-            // 마지막 데이터 행에 식비, 통행료, 기타, 최종 유류비 합계 추가
-            if (dataRowCount > 0) {
-                const lastDataRow = dataStartRow + dataRowCount - 1;
-                if (result.mealFee > 0) ws['F' + lastDataRow] = { v: result.mealFee, t: 'n', s: dataStyle };
-                if (result.tollFee > 0) ws['G' + lastDataRow] = { v: result.tollFee, t: 'n', s: dataStyle };
-                if (result.otherFee > 0) ws['H' + lastDataRow] = { v: result.otherFee, t: 'n', s: dataStyle };
-                // 마지막 데이터 행에 최종 유류비 합계 표시
-                ws['I' + lastDataRow] = { v: totalFuelCost + result.mealFee + result.tollFee + result.otherFee, t: 'n', s: dataStyle };
+                
+                grandTotalFuelCost += dayFuelCost;
+                grandTotalMealFee += res.mealFee || 0;
+                grandTotalTollFee += res.tollFee || 0;
+                grandTotalOtherFee += res.otherFee || 0;
             }
 
             // 빈 데이터 행 채우기
@@ -4197,16 +4410,17 @@
             }
 
             // 합계 행 (행 33)
-            const sumRow = dataStartRow + totalDataRows; // 33
+            const sumRow = dataStartRow + totalDataRows; // 27
+            const grandTotal = grandTotalFuelCost + grandTotalMealFee + grandTotalTollFee + grandTotalOtherFee;
             ws['A' + sumRow] = { v: '', t: 's', s: sumRowStyle };
             ws['B' + sumRow] = { v: '', t: 's', s: sumRowStyle };
             ws['C' + sumRow] = { v: '', t: 's', s: sumRowStyle };
             ws['D' + sumRow] = { v: '합계', t: 's', s: sumRowStyle };
-            ws['E' + sumRow] = { v: Math.round(result.distanceKm), t: 'n', s: sumRowStyle };
-            ws['F' + sumRow] = { v: result.mealFee || 0, t: 'n', s: sumRowStyle };
-            ws['G' + sumRow] = { v: result.tollFee || 0, t: 'n', s: sumRowStyle };
-            ws['H' + sumRow] = { v: result.otherFee || 0, t: 'n', s: sumRowStyle };
-            ws['I' + sumRow] = { v: result.totalCost, t: 'n', s: sumRowStyle };
+            ws['E' + sumRow] = { v: grandTotalDistance, t: 'n', s: sumRowStyle };
+            ws['F' + sumRow] = { v: grandTotalMealFee, t: 'n', s: sumRowStyle };
+            ws['G' + sumRow] = { v: grandTotalTollFee, t: 'n', s: sumRowStyle };
+            ws['H' + sumRow] = { v: grandTotalOtherFee, t: 'n', s: sumRowStyle };
+            ws['I' + sumRow] = { v: grandTotal, t: 'n', s: sumRowStyle };
             ws['J' + sumRow] = { v: '', t: 's', s: sumRowStyle };
             
             // 범위 설정
