@@ -4398,18 +4398,30 @@
                 const sheetData = allDataRows.slice(startIdx, endIdx);
                 const isLastSheet = sheetIdx === totalSheets - 1;
                 
+                // 행 1: 빈 행 (테두리 없음)
+                cols.forEach(col => {
+                    sheetWs[col + '1'] = { v: '', t: 's', s: noBorderStyle };
+                });
+                
                 // 제목
                 sheetWs['A2'] = { v: '면접원 시외 교통비 정산표', t: 's', s: titleStyle };
-                
-                // 담당SV 행
+
+                // 담당SV 행 (테두리 없음)
                 ['A3', 'B3', 'C3', 'D3', 'E3', 'F3', 'G3', 'H3'].forEach(cell => {
                     sheetWs[cell] = { v: '', t: 's', s: noBorderStyle };
                 });
                 sheetWs['I3'] = { v: '담당SV', t: 's', s: { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: mediumBorder } };
-                
-                // 프로젝트명 + 면접원 정보
+
+                // 프로젝트명 + 면접원 정보 (시트 번호 파란색으로 표시)
+                const sheetNumText = totalSheets > 1 ? ` (${sheetIdx + 1})` : '';
+                // 행 4, 5, 6 모든 셀 테두리 없음 먼저 적용
+                [4, 5, 6].forEach(rowNum => {
+                    cols.forEach(col => {
+                        sheetWs[col + rowNum] = { v: '', t: 's', s: noBorderStyle };
+                    });
+                });
                 sheetWs['A4'] = { v: `   프로젝트명 : ${result.projectName || ''}`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
-                sheetWs['F4'] = { v: `면접원 이름 : ${result.interviewerName || ''}( ${result.interviewerId || ''})`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
+                sheetWs['F4'] = { v: `면접원 이름 : ${result.interviewerName || ''}( ${result.interviewerId || ''})${sheetNumText}`, t: 's', s: { font: { name: fontName, sz: 10, color: totalSheets > 1 ? { rgb: "0000FF" } : { rgb: "000000" } }, alignment: leftAlign } };
                 
                 // 정산 확인 문구
                 sheetWs['A6'] = { v: `   ${year}년      ${monthNum}월  시외 교통비를 아래와 같이 정산함을 확인합니다.`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
