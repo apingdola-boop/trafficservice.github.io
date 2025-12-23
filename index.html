@@ -4388,15 +4388,15 @@
             ws['I3'] = { v: '담당SV', t: 's', s: { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: mediumBorder } };
             ws['J3'] = { v: '', t: 's', s: { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: mediumBorder } };
 
-            // 행 3: 프로젝트명 + 면접원 정보
-            ws['A4'] = { v: `   프로젝트명 : ${result.projectName || ''}`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
-            ws['F4'] = { v: `면접원 이름 : ${result.interviewerName || ''}( ${result.interviewerId || ''})`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
+            // 행 3: 프로젝트명 + 면접원 정보 (굵게)
+            ws['A4'] = { v: `   프로젝트명 : ${result.projectName || ''}`, t: 's', s: { font: { name: fontName, sz: 10, bold: true }, alignment: leftAlign } };
+            ws['F4'] = { v: `면접원 이름 : ${result.interviewerName || ''}( ${result.interviewerId || ''})`, t: 's', s: { font: { name: fontName, sz: 10, bold: true }, alignment: leftAlign } };
             // I4, J4: 테두리 있는 빈 셀
             ws['I4'] = { v: '', t: 's', s: { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: mediumBorder } };
             ws['J4'] = { v: '', t: 's', s: { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: mediumBorder } };
             
-            // 행 5: 정산 확인 문구
-            ws['A6'] = { v: `   ${year}년      ${monthNum}월  시외 교통비를 아래와 같이 정산함을 확인합니다.`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
+            // 행 5: 정산 확인 문구 (12pt, 굵게)
+            ws['A6'] = { v: `   ${year}년      ${monthNum}월  시외 교통비를 아래와 같이 정산함을 확인합니다.`, t: 's', s: { font: { name: fontName, sz: 12, bold: true }, alignment: leftAlign } };
             
             // 행 6-7: 테이블 헤더 (분홍색 배경)
             const headers = ['날짜', '출발지', '도착지', '진행\n부수', '주행거리\n(km)', '식비', '통행료', '기타', '합 계', ''];
@@ -4521,14 +4521,14 @@
                         sheetWs[col + rowNum] = { v: '', t: 's', s: noBorderStyle };
                     });
                 });
-                sheetWs['A4'] = { v: `   프로젝트명 : ${result.projectName || ''}`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
-                sheetWs['F4'] = { v: `면접원 이름 : ${result.interviewerName || ''}( ${result.interviewerId || ''})${sheetNumText}`, t: 's', s: { font: { name: fontName, sz: 10, color: totalSheets > 1 ? { rgb: "0000FF" } : { rgb: "000000" } }, alignment: leftAlign } };
+                sheetWs['A4'] = { v: `   프로젝트명 : ${result.projectName || ''}`, t: 's', s: { font: { name: fontName, sz: 10, bold: true }, alignment: leftAlign } };
+                sheetWs['F4'] = { v: `면접원 이름 : ${result.interviewerName || ''}( ${result.interviewerId || ''})${sheetNumText}`, t: 's', s: { font: { name: fontName, sz: 10, bold: true, color: totalSheets > 1 ? { rgb: "0000FF" } : { rgb: "000000" } }, alignment: leftAlign } };
                 // I4, J4: 테두리 있는 빈 셀
                 sheetWs['I4'] = { v: '', t: 's', s: { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: mediumBorder } };
                 sheetWs['J4'] = { v: '', t: 's', s: { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: mediumBorder } };
                 
-                // 정산 확인 문구
-                sheetWs['A6'] = { v: `   ${year}년      ${monthNum}월  시외 교통비를 아래와 같이 정산함을 확인합니다.`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
+                // 정산 확인 문구 (12pt, 굵게)
+                sheetWs['A6'] = { v: `   ${year}년      ${monthNum}월  시외 교통비를 아래와 같이 정산함을 확인합니다.`, t: 's', s: { font: { name: fontName, sz: 12, bold: true }, alignment: leftAlign } };
                 
                 // 테이블 헤더
                 cols.forEach((col, i) => {
