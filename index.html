@@ -3817,8 +3817,17 @@
         }
 
         // 카카오 REST API로 주소 검색
-        async function searchAddress(query) {
-            const url = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(query)}`;
+        async function searchAddress(query, isRetry = false) {
+            // "동", "리", "면" 등으로 끝나는 주소는 경로 탐색 시 오류가 날 수 있으므로
+            // 행정복지센터나 주민센터를 추가하여 정확한 좌표를 얻음
+            let searchQuery = query;
+            const needsLandmark = /[동리면가읍]$/.test(query.trim()) && !isRetry;
+            if (needsLandmark) {
+                searchQuery = query.trim() + ' 행정복지센터';
+                console.log(`주소 보정: "${query}" → "${searchQuery}"`);
+            }
+            
+            const url = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(searchQuery)}`;
             const response = await fetch(url, {
                 headers: { 'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}` }
             });
@@ -3833,12 +3842,40 @@
                 // 도로명 주소 우선, 없으면 지번 주소, 그것도 없으면 장소명 사용
                 const roadAddress = place.road_address_name || place.address_name || place.place_name;
                 return {
-                    name: place.place_name,  // 화면 표시용 (장소명)
+                    name: needsLandmark ? query : place.place_name,  // 원래 입력한 주소 또는 장소명
                     roadAddress: roadAddress,  // 엑셀 출력용 (도로명 주소)
                     x: place.x,
                     y: place.y
                 };
             }
+            
+            // 행정복지센터로 검색 실패 시 주민센터로 재시도
+            if (needsLandmark && !isRetry) {
+                console.log(`"${searchQuery}" 검색 실패, 주민센터로 재시도`);
+                const retryQuery = query.trim() + ' 주민센터';
+                const retryUrl = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(retryQuery)}`;
+                const retryResponse = await fetch(retryUrl, {
+                    headers: { 'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}` }
+                });
+                
+                if (retryResponse.ok) {
+                    const retryData = await retryResponse.json();
+                    if (retryData.documents && retryData.documents.length > 0) {
+                        const place = retryData.documents[0];
+                        const roadAddress = place.road_address_name || place.address_name || place.place_name;
+                        return {
+                            name: query,
+                            roadAddress: roadAddress,
+                            x: place.x,
+                            y: place.y
+                        };
+                    }
+                }
+                
+                // 그래도 실패하면 원래 주소로 검색
+                return searchAddress(query, true);
+            }
+            
             throw new Error(`주소를 찾을 수 없습니다: ${query}`);
         }
 
