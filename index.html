@@ -4461,8 +4461,8 @@
                 grandTotalOtherFee += res.otherFee || 0;
             }
             
-            // 18행 단위로 시트 분할
-            const totalDataRows = 18;
+            // 25행 단위로 시트 분할
+            const totalDataRows = 25;
             const dataStartRow = 9;
             const totalSheets = Math.ceil(allDataRows.length / totalDataRows) || 1;
             const wb = XLSX.utils.book_new();
