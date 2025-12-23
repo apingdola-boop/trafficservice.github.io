@@ -4561,13 +4561,13 @@
                     });
                 }
                 
-                // 합계 행
+                // 합계 행 (A~D 병합)
                 const sumRow = dataStartRow + totalDataRows;
                 const grandTotal = grandTotalFuelCost + grandTotalMealFee + grandTotalTollFee + grandTotalOtherFee;
-                sheetWs['A' + sumRow] = { v: '', t: 's', s: sumRowStyle };
+                sheetWs['A' + sumRow] = { v: '합계', t: 's', s: sumRowStyle };
                 sheetWs['B' + sumRow] = { v: '', t: 's', s: sumRowStyle };
                 sheetWs['C' + sumRow] = { v: '', t: 's', s: sumRowStyle };
-                sheetWs['D' + sumRow] = { v: '합계', t: 's', s: sumRowStyle };
+                sheetWs['D' + sumRow] = { v: '', t: 's', s: sumRowStyle };
                 sheetWs['E' + sumRow] = { v: isLastSheet ? grandTotalDistance : '', t: isLastSheet ? 'n' : 's', s: isLastSheet ? sumRowStyleNum : sumRowStyle };
                 sheetWs['F' + sumRow] = { v: isLastSheet ? grandTotalMealFee : '', t: isLastSheet ? 'n' : 's', s: isLastSheet ? sumRowStyleNum : sumRowStyle };
                 sheetWs['G' + sumRow] = { v: isLastSheet ? grandTotalTollFee : '', t: isLastSheet ? 'n' : 's', s: isLastSheet ? sumRowStyleNum : sumRowStyle };
@@ -4597,6 +4597,9 @@
                 for (let r = 8; r <= sumRow - 1; r++) {
                     sheetWs['!merges'].push({ s: { r: r, c: 8 }, e: { r: r, c: 9 } });
                 }
+                // 합계 행 A~D 병합, I~J 병합
+                sheetWs['!merges'].push({ s: { r: sumRow - 1, c: 0 }, e: { r: sumRow - 1, c: 3 } });  // A:D 병합
+                sheetWs['!merges'].push({ s: { r: sumRow - 1, c: 8 }, e: { r: sumRow - 1, c: 9 } });  // I:J 병합
                 sheetWs['!cols'] = [
                     { wch: 8 },   // A: 날짜
                     { wch: 18 },  // B: 출발지 (넓게)
