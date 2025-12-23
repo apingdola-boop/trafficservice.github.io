@@ -1356,6 +1356,11 @@
                     <input type="text" id="trip_day" value="" placeholder="일" maxlength="2">
                     <span class="date-sep">일</span>
                 </div>
+                <div class="date-input-wrapper" style="margin-left: 30px;">
+                    <span class="date-sep">진행 부수</span>
+                    <input type="text" id="trip_count" value="" placeholder="부수" maxlength="4" style="width: 50px;">
+                    <span class="date-sep">부</span>
+                </div>
             </div>
             
             <!-- 프로젝트 정보 -->
@@ -4026,7 +4031,8 @@
             const tripMonth = parseInt(document.getElementById('trip_month').value) || (today.getMonth() + 1);
             const tripDay = parseInt(document.getElementById('trip_day').value) || today.getDate();
             const tripDateText = `${tripMonth}월 ${tripDay}일`;
-            
+            const tripCount = document.getElementById('trip_count').value.trim(); // 진행 부수
+
             // 프로젝트 정보
             const projectNum1 = document.getElementById('project_num1').value.trim();
             const projectNum2 = document.getElementById('project_num2').value.trim();
@@ -4113,6 +4119,7 @@
                 // 결과 저장 (엑셀 내보내기용)
                 lastCalculationResult = {
                     date: tripDateText,
+                    tripCount: tripCount, // 진행 부수
                     projectNumber: projectNumber,
                     projectName: projectName,
                     interviewerId: selectedInterviewer.id,
@@ -4346,6 +4353,7 @@
                         
                         dayRows.push({
                             date: isFirstOfDay ? dateStr : '',
+                            tripCount: isFirstOfDay ? (result.tripCount || '') : '',
                             from: segment.from,
                             to: segment.to,
                             distance: roundedDistance,
@@ -4361,6 +4369,7 @@
                         
                         dayRows.push({
                             date: isFirstOfDay ? dateStr : '',
+                            tripCount: isFirstOfDay ? (result.tripCount || '') : '',
                             from: coords[i].roadAddress || coords[i].name,
                             to: coords[i + 1].roadAddress || coords[i + 1].name,
                             distance: distancePerSegment,
@@ -4439,7 +4448,7 @@
                     sheetWs['A' + rowNum] = { v: row.date, t: 's', s: dataStyle };
                     sheetWs['B' + rowNum] = { v: row.from, t: 's', s: dataStyle };
                     sheetWs['C' + rowNum] = { v: row.to, t: 's', s: dataStyle };
-                    sheetWs['D' + rowNum] = { v: '', t: 's', s: dataStyle };
+                    sheetWs['D' + rowNum] = { v: row.tripCount || '', t: 's', s: dataStyle };
                     sheetWs['E' + rowNum] = { v: row.distance, t: 'n', s: dataStyle };
                     sheetWs['F' + rowNum] = { v: row.mealFee > 0 ? row.mealFee : '', t: row.mealFee > 0 ? 'n' : 's', s: dataStyle };
                     sheetWs['G' + rowNum] = { v: row.tollFee > 0 ? row.tollFee : '', t: row.tollFee > 0 ? 'n' : 's', s: dataStyle };
