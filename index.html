@@ -4340,11 +4340,28 @@
                 border: thinBorder
             };
             
+            // 숫자용 스타일 (1000단위 구분 기호)
+            const dataStyleNum = {
+                font: { name: fontName, sz: 10 },
+                alignment: centerAlign,
+                border: thinBorder,
+                numFmt: "#,##0"
+            };
+
             const sumRowStyle = {
                 font: { name: fontName, bold: true, sz: 10 },
                 alignment: centerAlign,
                 fill: pinkBg,
                 border: thinBorder
+            };
+            
+            // 합계 행 숫자용 스타일
+            const sumRowStyleNum = {
+                font: { name: fontName, bold: true, sz: 10 },
+                alignment: centerAlign,
+                fill: pinkBg,
+                border: thinBorder,
+                numFmt: "#,##0"
             };
 
             // 워크시트 생성
@@ -4527,11 +4544,11 @@
                     sheetWs['B' + rowNum] = { v: row.from, t: 's', s: dataStyle };
                     sheetWs['C' + rowNum] = { v: row.to, t: 's', s: dataStyle };
                     sheetWs['D' + rowNum] = { v: row.tripCount || '', t: 's', s: dataStyle };
-                    sheetWs['E' + rowNum] = { v: row.distance, t: 'n', s: dataStyle };
-                    sheetWs['F' + rowNum] = { v: row.mealFee > 0 ? row.mealFee : '', t: row.mealFee > 0 ? 'n' : 's', s: dataStyle };
-                    sheetWs['G' + rowNum] = { v: row.tollFee > 0 ? row.tollFee : '', t: row.tollFee > 0 ? 'n' : 's', s: dataStyle };
-                    sheetWs['H' + rowNum] = { v: row.otherFee > 0 ? row.otherFee : '', t: row.otherFee > 0 ? 'n' : 's', s: dataStyle };
-                    sheetWs['I' + rowNum] = { v: row.total > 0 ? row.total : '', t: row.total > 0 ? 'n' : 's', s: dataStyle };
+                    sheetWs['E' + rowNum] = { v: row.distance, t: 'n', s: dataStyleNum };
+                    sheetWs['F' + rowNum] = { v: row.mealFee > 0 ? row.mealFee : '', t: row.mealFee > 0 ? 'n' : 's', s: row.mealFee > 0 ? dataStyleNum : dataStyle };
+                    sheetWs['G' + rowNum] = { v: row.tollFee > 0 ? row.tollFee : '', t: row.tollFee > 0 ? 'n' : 's', s: row.tollFee > 0 ? dataStyleNum : dataStyle };
+                    sheetWs['H' + rowNum] = { v: row.otherFee > 0 ? row.otherFee : '', t: row.otherFee > 0 ? 'n' : 's', s: row.otherFee > 0 ? dataStyleNum : dataStyle };
+                    sheetWs['I' + rowNum] = { v: row.total > 0 ? row.total : '', t: row.total > 0 ? 'n' : 's', s: row.total > 0 ? dataStyleNum : dataStyle };
                     sheetWs['J' + rowNum] = { v: '', t: 's', s: dataStyle };
                     dataRowCount++;
                 }
@@ -4551,11 +4568,11 @@
                 sheetWs['B' + sumRow] = { v: '', t: 's', s: sumRowStyle };
                 sheetWs['C' + sumRow] = { v: '', t: 's', s: sumRowStyle };
                 sheetWs['D' + sumRow] = { v: '합계', t: 's', s: sumRowStyle };
-                sheetWs['E' + sumRow] = { v: isLastSheet ? grandTotalDistance : '', t: isLastSheet ? 'n' : 's', s: sumRowStyle };
-                sheetWs['F' + sumRow] = { v: isLastSheet ? grandTotalMealFee : '', t: isLastSheet ? 'n' : 's', s: sumRowStyle };
-                sheetWs['G' + sumRow] = { v: isLastSheet ? grandTotalTollFee : '', t: isLastSheet ? 'n' : 's', s: sumRowStyle };
-                sheetWs['H' + sumRow] = { v: isLastSheet ? grandTotalOtherFee : '', t: isLastSheet ? 'n' : 's', s: sumRowStyle };
-                sheetWs['I' + sumRow] = { v: isLastSheet ? grandTotal : '', t: isLastSheet ? 'n' : 's', s: sumRowStyle };
+                sheetWs['E' + sumRow] = { v: isLastSheet ? grandTotalDistance : '', t: isLastSheet ? 'n' : 's', s: isLastSheet ? sumRowStyleNum : sumRowStyle };
+                sheetWs['F' + sumRow] = { v: isLastSheet ? grandTotalMealFee : '', t: isLastSheet ? 'n' : 's', s: isLastSheet ? sumRowStyleNum : sumRowStyle };
+                sheetWs['G' + sumRow] = { v: isLastSheet ? grandTotalTollFee : '', t: isLastSheet ? 'n' : 's', s: isLastSheet ? sumRowStyleNum : sumRowStyle };
+                sheetWs['H' + sumRow] = { v: isLastSheet ? grandTotalOtherFee : '', t: isLastSheet ? 'n' : 's', s: isLastSheet ? sumRowStyleNum : sumRowStyle };
+                sheetWs['I' + sumRow] = { v: isLastSheet ? grandTotal : '', t: isLastSheet ? 'n' : 's', s: isLastSheet ? sumRowStyleNum : sumRowStyle };
                 sheetWs['J' + sumRow] = { v: '', t: 's', s: sumRowStyle };
                 
                 // 범위/병합/열너비/행높이 설정
@@ -4565,6 +4582,7 @@
                     { s: { r: 2, c: 8 }, e: { r: 2, c: 9 } },  // 담당SV I3:J3
                     { s: { r: 3, c: 0 }, e: { r: 3, c: 4 } },  // 프로젝트명 A4:E4
                     { s: { r: 3, c: 5 }, e: { r: 3, c: 7 } },  // 면접원 이름 F4:H4
+                    { s: { r: 3, c: 8 }, e: { r: 3, c: 9 } },  // I4:J4 병합
                     { s: { r: 5, c: 0 }, e: { r: 5, c: 9 } },  // 정산 확인 문구 A6:J6
                     { s: { r: 6, c: 0 }, e: { r: 7, c: 0 } },
                     { s: { r: 6, c: 1 }, e: { r: 7, c: 1 } },
@@ -4584,10 +4602,10 @@
                     { wch: 18 },  // B: 출발지 (넓게)
                     { wch: 18 },  // C: 도착지 (넓게)
                     { wch: 6 },   // D: 진행부수
-                    { wch: 10 },  // E: 주행거리
-                    { wch: 8 },   // F: 식비
-                    { wch: 8 },   // G: 통행료
-                    { wch: 8 },   // H: 기타
+                    { wch: 8 },   // E: 주행거리
+                    { wch: 9 },   // F: 식비
+                    { wch: 9 },   // G: 통행료
+                    { wch: 9 },   // H: 기타
                     { wch: 10 },  // I: 합계
                     { wch: 3 }    // J: 병합용
                 ];
