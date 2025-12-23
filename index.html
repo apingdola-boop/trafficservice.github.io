@@ -3818,12 +3818,23 @@
 
         // 카카오 REST API로 주소 검색
         async function searchAddress(query, isRetry = false) {
-            // "동", "리", "면" 등으로 끝나는 주소는 경로 탐색 시 오류가 날 수 있으므로
-            // 행정복지센터나 주민센터를 추가하여 정확한 좌표를 얻음
+            // 주소 유형에 따라 랜드마크 추가
+            // - 동/가/읍: 행정복지센터 → 주민센터 순서로 검색
+            // - 면/리: 마을회관 순서로 검색
             let searchQuery = query;
-            const needsLandmark = /[동리면가읍]$/.test(query.trim()) && !isRetry;
+            const trimmedQuery = query.trim();
+            const endsWithDongGaEup = /[동가읍]$/.test(trimmedQuery);
+            const endsWithMyeonRi = /[면리]$/.test(trimmedQuery);
+            const needsLandmark = (endsWithDongGaEup || endsWithMyeonRi) && !isRetry;
+            
             if (needsLandmark) {
-                searchQuery = query.trim() + ' 행정복지센터';
+                if (endsWithMyeonRi) {
+                    // 면/리는 마을회관으로 검색
+                    searchQuery = trimmedQuery + ' 마을회관';
+                } else {
+                    // 동/가/읍은 행정복지센터로 검색
+                    searchQuery = trimmedQuery + ' 행정복지센터';
+                }
                 console.log(`주소 보정: "${query}" → "${searchQuery}"`);
             }
             
@@ -3849,10 +3860,19 @@
                 };
             }
             
-            // 행정복지센터로 검색 실패 시 주민센터로 재시도
+            // 첫 번째 검색 실패 시 대체 랜드마크로 재시도
             if (needsLandmark && !isRetry) {
-                console.log(`"${searchQuery}" 검색 실패, 주민센터로 재시도`);
-                const retryQuery = query.trim() + ' 주민센터';
+                let retryQuery;
+                if (endsWithMyeonRi) {
+                    // 마을회관 실패 시 면사무소/이장님댁으로 재시도
+                    console.log(`"${searchQuery}" 검색 실패, 면사무소로 재시도`);
+                    retryQuery = trimmedQuery + ' 면사무소';
+                } else {
+                    // 행정복지센터 실패 시 주민센터로 재시도
+                    console.log(`"${searchQuery}" 검색 실패, 주민센터로 재시도`);
+                    retryQuery = trimmedQuery + ' 주민센터';
+                }
+                
                 const retryUrl = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(retryQuery)}`;
                 const retryResponse = await fetch(retryUrl, {
                     headers: { 'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}` }
