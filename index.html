@@ -4374,6 +4374,9 @@
             // 행 3: 프로젝트명 + 면접원 정보
             ws['A4'] = { v: `   프로젝트명 : ${result.projectName || ''}`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
             ws['F4'] = { v: `면접원 이름 : ${result.interviewerName || ''}( ${result.interviewerId || ''})`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
+            // I4, J4: 테두리 있는 빈 셀
+            ws['I4'] = { v: '', t: 's', s: { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: mediumBorder } };
+            ws['J4'] = { v: '', t: 's', s: { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: mediumBorder } };
             
             // 행 5: 정산 확인 문구
             ws['A6'] = { v: `   ${year}년      ${monthNum}월  시외 교통비를 아래와 같이 정산함을 확인합니다.`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
@@ -4503,6 +4506,9 @@
                 });
                 sheetWs['A4'] = { v: `   프로젝트명 : ${result.projectName || ''}`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
                 sheetWs['F4'] = { v: `면접원 이름 : ${result.interviewerName || ''}( ${result.interviewerId || ''})${sheetNumText}`, t: 's', s: { font: { name: fontName, sz: 10, color: totalSheets > 1 ? { rgb: "0000FF" } : { rgb: "000000" } }, alignment: leftAlign } };
+                // I4, J4: 테두리 있는 빈 셀
+                sheetWs['I4'] = { v: '', t: 's', s: { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: mediumBorder } };
+                sheetWs['J4'] = { v: '', t: 's', s: { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: mediumBorder } };
                 
                 // 정산 확인 문구
                 sheetWs['A6'] = { v: `   ${year}년      ${monthNum}월  시외 교통비를 아래와 같이 정산함을 확인합니다.`, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: leftAlign } };
@@ -4558,7 +4564,7 @@
                     { s: { r: 1, c: 0 }, e: { r: 1, c: 9 } },  // 제목 A2:J2
                     { s: { r: 2, c: 8 }, e: { r: 2, c: 9 } },  // 담당SV I3:J3
                     { s: { r: 3, c: 0 }, e: { r: 3, c: 4 } },  // 프로젝트명 A4:E4
-                    { s: { r: 3, c: 5 }, e: { r: 3, c: 9 } },  // 면접원 이름 F4:J4
+                    { s: { r: 3, c: 5 }, e: { r: 3, c: 7 } },  // 면접원 이름 F4:H4
                     { s: { r: 5, c: 0 }, e: { r: 5, c: 9 } },  // 정산 확인 문구 A6:J6
                     { s: { r: 6, c: 0 }, e: { r: 7, c: 0 } },
                     { s: { r: 6, c: 1 }, e: { r: 7, c: 1 } },
