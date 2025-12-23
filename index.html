@@ -4592,6 +4592,28 @@
                 sheetWs['!rows'][7] = { hpt: 22 };
                 for (let i = 8; i < sumRow; i++) sheetWs['!rows'][i] = { hpt: 30 };
                 
+                // 인쇄 설정: 한 페이지에 모든 열 맞추기, A4 용지
+                sheetWs['!pageSetup'] = {
+                    paperSize: 9,           // A4 용지
+                    orientation: 'portrait', // 세로 방향
+                    fitToWidth: 1,          // 모든 열을 한 페이지에 맞춤
+                    fitToHeight: 0,         // 높이는 제한 없음
+                    scale: 100              // 기본 배율
+                };
+                
+                // 여백 설정: 위쪽/아래쪽 0.9cm (약 0.354인치)
+                sheetWs['!margins'] = {
+                    top: 0.354,     // 위쪽 여백 (0.9cm)
+                    bottom: 0.354,  // 아래쪽 여백 (0.9cm)
+                    left: 0.7,      // 왼쪽 여백 (기본)
+                    right: 0.7,     // 오른쪽 여백 (기본)
+                    header: 0.3,    // 머리글 여백
+                    footer: 0.3     // 바닥글 여백
+                };
+                
+                // 인쇄 영역 설정
+                sheetWs['!printHeader'] = { fitToPage: true };
+                
                 const sheetName = totalSheets > 1 ? `정산표 ${sheetIdx + 1}` : '면접원 경비 정산표';
                 XLSX.utils.book_append_sheet(wb, sheetWs, sheetName);
             }
