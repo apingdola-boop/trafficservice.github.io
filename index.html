@@ -4003,11 +4003,52 @@
 
         // 카카오 REST API로 주소 검색
         async function searchAddress(query, isRetry = false) {
+            const trimmedQuery = query.trim();
+            
+            // 도로명 주소 패턴 감지 (~길, ~로로 끝나거나 숫자가 포함된 주소)
+            const isRoadAddress = /[길로]\s*\d*[-\d]*$/.test(trimmedQuery) || /\d+[-번지]*$/.test(trimmedQuery);
+            
+            // 도로명 주소인 경우 주소 검색 API 먼저 시도
+            if (isRoadAddress && !isRetry) {
+                console.log(`도로명 주소 감지: "${trimmedQuery}" - 주소 검색 API 사용`);
+                const addressUrl = `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(trimmedQuery)}`;
+                const addressResponse = await fetch(addressUrl, {
+                    headers: { 'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}` }
+                });
+                
+                if (addressResponse.ok) {
+                    const addressData = await addressResponse.json();
+                    if (addressData.documents && addressData.documents.length > 0) {
+                        const doc = addressData.documents[0];
+                        // 도로명 주소 결과
+                        if (doc.road_address) {
+                            console.log(`도로명 주소 검색 성공: ${doc.road_address.address_name}`);
+                            return {
+                                name: trimmedQuery,
+                                roadAddress: doc.road_address.address_name,
+                                x: doc.x,
+                                y: doc.y
+                            };
+                        }
+                        // 지번 주소 결과
+                        if (doc.address) {
+                            console.log(`지번 주소 검색 성공: ${doc.address.address_name}`);
+                            return {
+                                name: trimmedQuery,
+                                roadAddress: doc.address.address_name,
+                                x: doc.x,
+                                y: doc.y
+                            };
+                        }
+                    }
+                }
+                console.log(`주소 검색 API 실패, 키워드 검색으로 전환`);
+            }
+            
             // 주소 유형에 따라 랜드마크 추가
             // - 동/가/읍: 행정복지센터 → 주민센터 순서로 검색
             // - 면/리: 마을회관 순서로 검색
-            let searchQuery = query;
-            const trimmedQuery = query.trim();
+            let searchQuery = trimmedQuery;
             const endsWithDongGaEup = /[동가읍]$/.test(trimmedQuery);
             const endsWithMyeonRi = /[면리]$/.test(trimmedQuery);
             const needsLandmark = (endsWithDongGaEup || endsWithMyeonRi) && !isRetry;
