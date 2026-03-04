@@ -802,30 +802,55 @@
         .card-title-with-date {
             display: flex;
             align-items: center;
-            flex-wrap: nowrap;
-            gap: 6px;
+            gap: 16px;
             margin-bottom: 10px;
         }
 
-        .card-title-with-date .date-input-wrapper {
-            margin-left: 10px !important;
+        .date-input-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .date-block {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .date-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .meta-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .meta-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
         }
 
         #trip_month,
         #trip_day {
-            width: 40px;
+            width: 50px;
         }
 
         #trip_count {
-            width: 40px !important;
+            width: 70px !important;
         }
 
         #transport_method {
-            width: 80px;
+            width: 140px;
         }
 
         #trip_purpose {
-            width: 100px;
+            width: 160px;
         }
 
         /* 4열 비용 설정 그리드 (크게) */
@@ -1482,24 +1507,30 @@
             <!-- 카드 제목 + 날짜 입력 -->
             <div class="card-title-with-date">
                 <h2 class="card-title" style="margin-bottom: 0;"><span class="icon">📅</span> 날짜</h2>
-                <div class="date-input-wrapper" style="margin-left: 20px;">
-                    <input type="text" id="trip_month" value="" placeholder="월" maxlength="2">
-                    <span class="date-sep">월</span>
-                    <input type="text" id="trip_day" value="" placeholder="일" maxlength="2">
-                    <span class="date-sep">일</span>
-                </div>
-                <div class="date-input-wrapper" style="margin-left: 30px;">
-                    <span class="date-sep">진행 부수</span>
-                    <input type="text" id="trip_count" value="" placeholder="부수" maxlength="4" style="width: 50px;">
-                    <span class="date-sep">부</span>
-                </div>
-                <div class="date-input-wrapper" style="margin-left: 30px;">
-                    <span class="date-sep">교통수단</span>
-                    <input type="text" id="transport_method" value="" placeholder="예: 자차" maxlength="20" style="width: 100px;">
-                </div>
-                <div class="date-input-wrapper" style="margin-left: 20px;">
-                    <span class="date-sep">용무</span>
-                    <input type="text" id="trip_purpose" value="" placeholder="예: 회의" maxlength="30" style="width: 140px;">
+                <div class="date-input-row">
+                    <div class="date-block">
+                        <div class="date-input-wrapper">
+                            <input type="text" id="trip_month" value="" placeholder="월" maxlength="2">
+                            <span class="date-sep">월</span>
+                            <input type="text" id="trip_day" value="" placeholder="일" maxlength="2">
+                            <span class="date-sep">일</span>
+                        </div>
+                    </div>
+                    <div class="meta-field">
+                        <label class="meta-label" for="trip_count">진행 부수</label>
+                        <div class="date-input-wrapper">
+                            <input type="text" id="trip_count" value="" placeholder="부수" maxlength="4">
+                            <span class="date-sep">부</span>
+                        </div>
+                    </div>
+                    <div class="meta-field">
+                        <label class="meta-label" for="transport_method">교통수단</label>
+                        <input type="text" id="transport_method" value="" placeholder="예: 자차" maxlength="20">
+                    </div>
+                    <div class="meta-field">
+                        <label class="meta-label" for="trip_purpose">용무</label>
+                        <input type="text" id="trip_purpose" value="" placeholder="예: 회의" maxlength="30">
+                    </div>
                 </div>
             </div>
             
