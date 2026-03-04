@@ -802,9 +802,30 @@
         .card-title-with-date {
             display: flex;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
+            flex-wrap: nowrap;
+            gap: 6px;
             margin-bottom: 10px;
+        }
+
+        .card-title-with-date .date-input-wrapper {
+            margin-left: 10px !important;
+        }
+
+        #trip_month,
+        #trip_day {
+            width: 40px;
+        }
+
+        #trip_count {
+            width: 40px !important;
+        }
+
+        #transport_method {
+            width: 80px;
+        }
+
+        #trip_purpose {
+            width: 100px;
         }
 
         /* 4열 비용 설정 그리드 (크게) */
