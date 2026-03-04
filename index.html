@@ -807,10 +807,10 @@
         }
 
         .date-input-row {
-            display: flex;
-            align-items: flex-end;
+            display: grid;
+            grid-template-columns: auto auto auto auto;
+            align-items: end;
             gap: 16px;
-            flex-wrap: wrap;
         }
 
         .date-block {
@@ -834,6 +834,23 @@
         .meta-label {
             font-size: 0.8rem;
             color: var(--text-secondary);
+        }
+
+        .meta-field input {
+            padding: 12px 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .meta-field input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
         }
 
         #trip_month,
