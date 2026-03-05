@@ -1207,19 +1207,26 @@
         }
 
         .sidebar-add-form .field-row {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 8px;
             margin-bottom: 8px;
         }
 
+        .sidebar-add-form .field-row.full {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
         .sidebar-add-form input {
-            flex: 1;
             padding: 8px 10px;
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 8px;
             color: var(--text-primary);
             font-size: 0.85rem;
+            min-width: 0;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .sidebar-add-form button {
@@ -1493,7 +1500,7 @@
                 <input type="text" id="add-interviewer-id" placeholder="ID">
                 <input type="text" id="add-interviewer-name" placeholder="이름">
             </div>
-            <div class="field-row">
+            <div class="field-row full">
                 <input type="text" id="add-interviewer-address" placeholder="주소">
             </div>
             <button onclick="addInterviewer()">면접원 추가하기</button>
