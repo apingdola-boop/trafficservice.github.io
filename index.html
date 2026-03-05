@@ -2428,6 +2428,9 @@
         const CUSTOM_PROJECTS_KEY = 'customProjects';
         const INTERVIEWERS_DATA_URL = 'data/interviewers.json';
         const PROJECTS_DATA_URL = 'data/projects.json';
+        let listsLoaded = false;
+
+        let listsReadyPromise = null;
 
         function getStoredList(key) {
             const raw = localStorage.getItem(key);
@@ -2486,8 +2489,23 @@
                 }
             } catch (error) {
                 console.warn('기본 목록 로드 실패:', error);
+                showToast('⚠️ 기본 목록 로드에 실패했습니다.', 'end');
             }
             loadCustomLists();
+            listsLoaded = true;
+        }
+
+        async function ensureListsLoaded() {
+            if (!listsLoaded) {
+                await loadBaseLists();
+            }
+        }
+
+        function ensureListsReady() {
+            if (!listsReadyPromise) {
+                listsReadyPromise = loadBaseLists();
+            }
+            return listsReadyPromise;
         }
 
         function addInterviewer() {
@@ -2739,8 +2757,9 @@
         });
 
         // 프로젝트 검색
-        function searchProject(event) {
+async function searchProject(event) {
             if (event && event.key && event.key !== 'Enter') return;
+            await ensureListsReady();
             
             const query = document.getElementById('project-search').value.trim().toLowerCase();
             const resultsContainer = document.getElementById('sidebar-right-results');
@@ -2824,7 +2843,8 @@
         }
         
         // 초성 필터 함수
-        function filterByChosung(type, chosung) {
+        async function filterByChosung(type, chosung) {
+            await ensureListsReady();
             // 버튼 active 상태 업데이트
             const container = document.getElementById(type === 'interviewer' ? 'interviewer-chosung' : 'project-chosung');
             container.querySelectorAll('.chosung-btn').forEach(btn => btn.classList.remove('active'));
@@ -2880,7 +2900,8 @@
         }
         
         // 프로젝트 초성 필터
-        function filterProjectByChosung(chosung) {
+async function filterProjectByChosung(chosung) {
+            await ensureListsReady();
             const resultsContainer = document.getElementById('sidebar-right-results');
             
             let results;
@@ -2914,8 +2935,9 @@
         }
 
         // 면접원 검색
-        function searchInterviewer(event) {
+async function searchInterviewer(event) {
             if (event && event.key && event.key !== 'Enter') return;
+            await ensureListsReady();
 
             const query = document.getElementById('interviewer-search').value.trim().toLowerCase();
             const resultsContainer = document.getElementById('sidebar-results');
