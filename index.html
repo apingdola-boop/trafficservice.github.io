@@ -2623,9 +2623,31 @@ async function searchInterviewer(event) {
             
             // 수동 등록 장소 확인
             if (MANUAL_PLACES[trimmedQuery]) {
-                console.log(`수동 등록 장소 발견: "${trimmedQuery}" → "${MANUAL_PLACES[trimmedQuery]}"`);
-                // 등록된 주소로 검색
-                return searchAddress(MANUAL_PLACES[trimmedQuery], true);
+                const manualAddress = MANUAL_PLACES[trimmedQuery];
+                console.log(`수동 등록 장소 발견: "${trimmedQuery}" → "${manualAddress}"`);
+                
+                // 주소 검색 API로 직접 검색
+                const addressUrl = `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(manualAddress)}`;
+                const addressResponse = await fetch(addressUrl, {
+                    headers: { 'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}` }
+                });
+                
+                if (addressResponse.ok) {
+                    const addressData = await addressResponse.json();
+                    if (addressData.documents && addressData.documents.length > 0) {
+                        const doc = addressData.documents[0];
+                        console.log(`수동 등록 주소 검색 성공:`, doc);
+                        return {
+                            name: trimmedQuery,
+                            roadAddress: doc.road_address?.address_name || doc.address_name || manualAddress,
+                            x: doc.x,
+                            y: doc.y
+                        };
+                    }
+                }
+                
+                // 주소 검색 실패 시 키워드 검색 시도
+                console.log(`주소 검색 실패, 키워드 검색 시도: "${manualAddress}"`);
             }
             
             // 캐시에서 먼저 확인 (자동완성에서 선택한 장소)
