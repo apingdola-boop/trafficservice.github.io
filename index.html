@@ -2692,6 +2692,36 @@ async function searchInterviewer(event) {
                 return searchAddress(query, true);
             }
             
+            // 상호명 검색 실패 시 부분 검색어로 재시도
+            // 예: "CU 울산화정동로점" → "CU 울산" 또는 "울산화정동로점"
+            if (!isRetry) {
+                const words = trimmedQuery.split(/\s+/);
+                if (words.length >= 2) {
+                    // 첫 단어 + 두번째 단어의 앞 2글자로 재시도
+                    const partialQuery = words[0] + ' ' + words.slice(1).join('').substring(0, 4);
+                    console.log(`"${trimmedQuery}" 검색 실패, 부분 검색어로 재시도: "${partialQuery}"`);
+                    
+                    const partialUrl = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(partialQuery)}`;
+                    const partialResponse = await fetch(partialUrl, {
+                        headers: { 'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}` }
+                    });
+                    
+                    if (partialResponse.ok) {
+                        const partialData = await partialResponse.json();
+                        if (partialData.documents && partialData.documents.length > 0) {
+                            const place = partialData.documents[0];
+                            const roadAddress = place.road_address_name || place.address_name || place.place_name;
+                            return {
+                                name: place.place_name,
+                                roadAddress: roadAddress,
+                                x: place.x,
+                                y: place.y
+                            };
+                        }
+                    }
+                }
+            }
+            
             throw new Error(`주소를 찾을 수 없습니다: ${query}`);
         }
 
