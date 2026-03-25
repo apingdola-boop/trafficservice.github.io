@@ -2447,6 +2447,9 @@ async function searchInterviewer(event) {
             attachWaypointAutocomplete(input);
         }
 
+        // 자동완성에서 선택한 장소의 좌표를 저장하는 캐시
+        const placeCoordinateCache = new Map();
+
         async function fetchWaypointSuggestions(query) {
             const trimmed = query.trim();
             if (!trimmed) return [];
@@ -2466,7 +2469,13 @@ async function searchInterviewer(event) {
                     (keywordData.documents || []).forEach(doc => {
                         if (doc.place_name && !seen.has(doc.place_name)) {
                             seen.add(doc.place_name);
-                            keywordResults.push({ label: doc.place_name });
+                            // 좌표 정보도 함께 저장
+                            keywordResults.push({ 
+                                label: doc.place_name,
+                                x: doc.x,
+                                y: doc.y,
+                                roadAddress: doc.road_address_name || doc.address_name || doc.place_name
+                            });
                         }
                     });
                 }
@@ -2486,7 +2495,12 @@ async function searchInterviewer(event) {
                         const addr = doc.road_address?.address_name || doc.address_name;
                         if (addr && !seen.has(addr)) {
                             seen.add(addr);
-                            addressResults.push({ label: addr });
+                            addressResults.push({ 
+                                label: addr,
+                                x: doc.x,
+                                y: doc.y,
+                                roadAddress: addr
+                            });
                         }
                     });
                 }
@@ -2512,6 +2526,16 @@ async function searchInterviewer(event) {
                 option.addEventListener('mousedown', (event) => {
                     event.preventDefault();
                     inputEl.value = item.label;
+                    // 좌표 정보를 캐시에 저장
+                    if (item.x && item.y) {
+                        placeCoordinateCache.set(item.label, {
+                            name: item.label,
+                            roadAddress: item.roadAddress,
+                            x: item.x,
+                            y: item.y
+                        });
+                        console.log(`좌표 캐시 저장: "${item.label}"`, item.x, item.y);
+                    }
                     listEl.style.display = 'none';
                 });
                 listEl.appendChild(option);
@@ -2574,6 +2598,12 @@ async function searchInterviewer(event) {
         // 카카오 REST API로 주소 검색
         async function searchAddress(query, isRetry = false) {
             const trimmedQuery = query.trim();
+            
+            // 캐시에서 먼저 확인 (자동완성에서 선택한 장소)
+            if (placeCoordinateCache.has(trimmedQuery)) {
+                console.log(`캐시에서 좌표 발견: "${trimmedQuery}"`);
+                return placeCoordinateCache.get(trimmedQuery);
+            }
             
             // 도로명 주소 패턴 감지 (~길, ~로로 끝나거나 숫자가 포함된 주소)
             const isRoadAddress = /[길로]\s*\d*[-\d]*$/.test(trimmedQuery) || /\d+[-번지]*$/.test(trimmedQuery);
