@@ -2451,29 +2451,11 @@ async function searchInterviewer(event) {
             const trimmed = query.trim();
             if (!trimmed) return [];
 
-            const suggestions = [];
+            const keywordResults = [];
+            const addressResults = [];
             const seen = new Set();
-            const addSuggestion = (label) => {
-                if (!label || seen.has(label)) return;
-                seen.add(label);
-                suggestions.push({ label });
-            };
 
-            try {
-                const addressUrl = `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(trimmed)}&size=6`;
-                const addressResponse = await fetch(addressUrl, {
-                    headers: { 'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}` }
-                });
-                if (addressResponse.ok) {
-                    const addressData = await addressResponse.json();
-                    (addressData.documents || []).forEach(doc => {
-                        addSuggestion(doc.road_address?.address_name || doc.address_name);
-                    });
-                }
-            } catch (error) {
-                console.warn('주소 자동완성 실패:', error);
-            }
-
+            // 키워드 검색 (상호명) - 먼저 실행
             try {
                 const keywordUrl = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(trimmed)}&size=15`;
                 const keywordResponse = await fetch(keywordUrl, {
@@ -2482,9 +2464,9 @@ async function searchInterviewer(event) {
                 if (keywordResponse.ok) {
                     const keywordData = await keywordResponse.json();
                     (keywordData.documents || []).forEach(doc => {
-                        // 상호명이 있으면 상호명 표시 (CU, GS25 등)
-                        if (doc.place_name) {
-                            addSuggestion(doc.place_name);
+                        if (doc.place_name && !seen.has(doc.place_name)) {
+                            seen.add(doc.place_name);
+                            keywordResults.push({ label: doc.place_name });
                         }
                     });
                 }
@@ -2492,7 +2474,28 @@ async function searchInterviewer(event) {
                 console.warn('키워드 자동완성 실패:', error);
             }
 
-            return suggestions.slice(0, 8);
+            // 주소 검색 - 나중에 실행
+            try {
+                const addressUrl = `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(trimmed)}&size=5`;
+                const addressResponse = await fetch(addressUrl, {
+                    headers: { 'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}` }
+                });
+                if (addressResponse.ok) {
+                    const addressData = await addressResponse.json();
+                    (addressData.documents || []).forEach(doc => {
+                        const addr = doc.road_address?.address_name || doc.address_name;
+                        if (addr && !seen.has(addr)) {
+                            seen.add(addr);
+                            addressResults.push({ label: addr });
+                        }
+                    });
+                }
+            } catch (error) {
+                console.warn('주소 자동완성 실패:', error);
+            }
+
+            // 상호명을 먼저, 주소를 나중에 표시
+            return [...keywordResults, ...addressResults].slice(0, 12);
         }
 
         function renderWaypointSuggestions(listEl, inputEl, suggestions) {
