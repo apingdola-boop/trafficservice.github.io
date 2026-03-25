@@ -1606,6 +1606,10 @@
 
             <div class="waypoint-container" id="waypoint-container"></div>
             
+            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                <span style="color: var(--text-secondary); font-size: 0.85rem; white-space: nowrap;">반복 단어</span>
+                <input type="text" id="waypoint-prefix" placeholder="예: CU, GS25" style="flex: 1; padding: 8px 12px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 8px; color: var(--text-primary); font-size: 0.9rem;">
+            </div>
             <div style="display: flex; gap: 10px; align-items: center;">
                 <button class="btn-add-waypoint" onclick="addWaypoint()">
                     <span>➕</span> 경유지 추가
@@ -2432,12 +2436,13 @@ async function searchInterviewer(event) {
         function addWaypoint() {
             waypointCount++;
             const container = document.getElementById('waypoint-container');
+            const prefix = document.getElementById('waypoint-prefix')?.value?.trim() || '';
             const div = document.createElement('div');
             div.className = 'waypoint-item';
             div.id = `waypoint-${waypointCount}`;
             div.innerHTML = `
                 <div class="waypoint-input-wrapper">
-                    <input type="text" placeholder="경유지 ${waypointCount}" class="waypoint-input" autocomplete="off">
+                    <input type="text" placeholder="경유지 ${waypointCount}" class="waypoint-input" autocomplete="off" value="${prefix ? prefix + ' ' : ''}">
                     <div class="waypoint-suggestions"></div>
                 </div>
                 <button class="btn-remove-waypoint" onclick="removeWaypoint(${waypointCount})">✕</button>
@@ -2445,6 +2450,11 @@ async function searchInterviewer(event) {
             container.appendChild(div);
             const input = div.querySelector('.waypoint-input');
             attachWaypointAutocomplete(input);
+            // 반복 단어가 있으면 커서를 끝으로 이동하고 포커스
+            if (prefix) {
+                input.focus();
+                input.setSelectionRange(input.value.length, input.value.length);
+            }
         }
 
         // 자동완성에서 선택한 장소의 좌표를 저장하는 캐시
@@ -2725,30 +2735,53 @@ async function searchInterviewer(event) {
                 return searchAddress(query, true);
             }
             
-            // 상호명 검색 실패 시 부분 검색어로 재시도
-            // 예: "CU 울산화정동로점" → "CU 울산" 또는 "울산화정동로점"
+            // 상호명 검색 실패 시 다양한 방법으로 재시도
             if (!isRetry) {
+                // 브랜드명 패턴 감지 (CU, GS25, 세븐일레븐 등)
+                const brandMatch = trimmedQuery.match(/^(CU|GS25|GS|세븐일레븐|이마트24|미니스톱|스타벅스|이디야|투썸|메가커피|빽다방|맥도날드|버거킹|롯데리아|KFC)\s*/i);
+                
+                let retryQueries = [];
                 const words = trimmedQuery.split(/\s+/);
-                if (words.length >= 2) {
-                    // 첫 단어 + 두번째 단어의 앞 2글자로 재시도
-                    const partialQuery = words[0] + ' ' + words.slice(1).join('').substring(0, 4);
+                
+                if (brandMatch) {
+                    // 브랜드명 + 지역명 조합으로 검색
+                    const brand = brandMatch[1].toUpperCase();
+                    const rest = trimmedQuery.substring(brandMatch[0].length);
+                    // "CU명촌아드리아점" → "CU 명촌", "CU 울산 명촌"
+                    if (rest.length >= 2) {
+                        retryQueries.push(brand + ' ' + rest.substring(0, 2));
+                        retryQueries.push(brand + ' ' + rest.substring(0, 4));
+                    }
+                } else if (words.length >= 2) {
+                    // 띄어쓰기가 있는 경우: "CU 울산화정동로점" → "CU 울산화정"
+                    retryQueries.push(words[0] + ' ' + words.slice(1).join('').substring(0, 4));
+                }
+                
+                for (const partialQuery of retryQueries) {
                     console.log(`"${trimmedQuery}" 검색 실패, 부분 검색어로 재시도: "${partialQuery}"`);
                     
-                    const partialUrl = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(partialQuery)}`;
+                    const partialUrl = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(partialQuery)}&size=15`;
                     const partialResponse = await fetch(partialUrl, {
                         headers: { 'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}` }
                     });
                     
                     if (partialResponse.ok) {
                         const partialData = await partialResponse.json();
-                        if (partialData.documents && partialData.documents.length > 0) {
-                            const place = partialData.documents[0];
-                            const roadAddress = place.road_address_name || place.address_name || place.place_name;
+                        // 원래 검색어와 가장 유사한 결과 찾기
+                        const originalLower = trimmedQuery.toLowerCase().replace(/\s/g, '');
+                        const matchingPlace = partialData.documents?.find(doc => 
+                            doc.place_name.toLowerCase().replace(/\s/g, '').includes(originalLower.substring(0, 6)) ||
+                            originalLower.includes(doc.place_name.toLowerCase().replace(/\s/g, '').substring(0, 6))
+                        ) || partialData.documents?.[0];
+                        
+                        if (matchingPlace) {
+                            const roadAddress = matchingPlace.road_address_name || matchingPlace.address_name || matchingPlace.place_name;
+                            console.log(`유사한 장소 발견: "${matchingPlace.place_name}"`);
                             return {
-                                name: place.place_name,
+                                name: matchingPlace.place_name,
                                 roadAddress: roadAddress,
-                                x: place.x,
-                                y: place.y
+                                x: matchingPlace.x,
+                                y: matchingPlace.y
                             };
                         }
                     }
