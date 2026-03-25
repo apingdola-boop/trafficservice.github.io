@@ -2635,15 +2635,18 @@ async function searchInterviewer(event) {
             }
             
             const url = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(searchQuery)}`;
+            console.log(`키워드 검색 시도: "${searchQuery}"`);
             const response = await fetch(url, {
                 headers: { 'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}` }
             });
 
             if (!response.ok) {
+                console.error(`키워드 검색 API 오류: ${response.status} ${response.statusText}`);
                 throw new Error(`주소 검색 실패: ${query}`);
             }
 
             const data = await response.json();
+            console.log(`키워드 검색 결과: ${data.documents?.length || 0}개 발견`, data.documents?.slice(0, 3));
             if (data.documents && data.documents.length > 0) {
                 const place = data.documents[0];
                 // 도로명 주소 우선, 없으면 지번 주소, 그것도 없으면 장소명 사용
