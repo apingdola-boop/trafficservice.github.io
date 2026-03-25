@@ -1803,6 +1803,14 @@
         // 카카오 REST API 키
         const KAKAO_REST_API_KEY = '90002fe2ca1129c4281d84a37e00eb43';
         
+        // 수동 등록 장소 (카카오 API에서 검색이 안 되는 장소들)
+        const MANUAL_PLACES = {
+            'CU명촌아드리아점': '울산광역시 북구 명촌5길 12',
+            'CU 명촌아드리아점': '울산광역시 북구 명촌5길 12',
+            'CU울산송정화동로점': '울산 북구 화동로 112',
+            'CU 울산송정화동로점': '울산 북구 화동로 112',
+        };
+        
         // 면접원 데이터 (2024년 12월 최신화 - 123명)
 
         // 프로젝트 데이터 (project update_2 기준 - 2156개)
@@ -2608,6 +2616,13 @@ async function searchInterviewer(event) {
         // 카카오 REST API로 주소 검색
         async function searchAddress(query, isRetry = false) {
             const trimmedQuery = query.trim();
+            
+            // 수동 등록 장소 확인
+            if (MANUAL_PLACES[trimmedQuery]) {
+                console.log(`수동 등록 장소 발견: "${trimmedQuery}" → "${MANUAL_PLACES[trimmedQuery]}"`);
+                // 등록된 주소로 검색
+                return searchAddress(MANUAL_PLACES[trimmedQuery], true);
+            }
             
             // 캐시에서 먼저 확인 (자동완성에서 선택한 장소)
             if (placeCoordinateCache.has(trimmedQuery)) {
