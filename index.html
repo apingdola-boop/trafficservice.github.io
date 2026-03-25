@@ -2475,7 +2475,7 @@ async function searchInterviewer(event) {
             }
 
             try {
-                const keywordUrl = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(trimmed)}&size=6`;
+                const keywordUrl = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(trimmed)}&size=15`;
                 const keywordResponse = await fetch(keywordUrl, {
                     headers: { 'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}` }
                 });
