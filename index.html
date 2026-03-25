@@ -1606,9 +1606,14 @@
 
             <div class="waypoint-container" id="waypoint-container"></div>
             
-            <button class="btn-add-waypoint" onclick="addWaypoint()">
-                <span>➕</span> 경유지 추가
-            </button>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="btn-add-waypoint" onclick="addWaypoint()">
+                    <span>➕</span> 경유지 추가
+                </button>
+                <button class="btn-add-waypoint" onclick="clearAllWaypoints()" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                    <span>🗑️</span> 전체 삭제
+                </button>
+            </div>
 
             <div class="input-group" style="margin-top: 20px;">
                 <label for="end">도착지 <span style="color: var(--accent-magenta); font-size: 0.8rem;">(👤 면접원 검색으로 자동 입력 가능)</span></label>
@@ -2545,6 +2550,13 @@ async function searchInterviewer(event) {
         // 경유지 삭제
         function removeWaypoint(id) {
             document.getElementById(`waypoint-${id}`)?.remove();
+        }
+
+        // 경유지 전체 삭제
+        function clearAllWaypoints() {
+            const container = document.getElementById('waypoint-container');
+            container.innerHTML = '';
+            waypointCount = 0;
         }
 
         // 모든 경유지 가져오기
