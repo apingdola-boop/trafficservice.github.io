@@ -2482,8 +2482,10 @@ async function searchInterviewer(event) {
                 if (keywordResponse.ok) {
                     const keywordData = await keywordResponse.json();
                     (keywordData.documents || []).forEach(doc => {
-                        const label = doc.road_address_name || doc.address_name || doc.place_name;
-                        addSuggestion(label);
+                        // 상호명이 있으면 상호명 표시 (CU, GS25 등)
+                        if (doc.place_name) {
+                            addSuggestion(doc.place_name);
+                        }
                     });
                 }
             } catch (error) {
