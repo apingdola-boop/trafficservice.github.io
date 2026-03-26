@@ -1813,7 +1813,56 @@
             'CU 울산송정화동로점': '울산 북구 화동로 112',
             'CU울산송정화동로': '울산 북구 화동로 112',
             'CU 울산송정화동로': '울산 북구 화동로 112',
+            'CU마산산호무학점': '경남 창원시 마산회원구 산호서6길 1',
+            'CU 마산산호무학점': '경남 창원시 마산회원구 산호서6길 1',
+            'CU마산산호무학': '경남 창원시 마산회원구 산호서6길 1',
+            'CU 마산산호무학': '경남 창원시 마산회원구 산호서6길 1',
+            'CU마산구암플러스점': '경남 창원시 마산회원구 구암동4길 11',
+            'CU 마산구암플러스점': '경남 창원시 마산회원구 구암동4길 11',
+            'CU마산구암플러스': '경남 창원시 마산회원구 구암동4길 11',
+            'CU 마산구암플러스': '경남 창원시 마산회원구 구암동4길 11',
+            'CU마산양덕한일2차점': '경남 창원시 마산회원구 양덕남1길 24-1',
+            'CU 마산양덕한일2차점': '경남 창원시 마산회원구 양덕남1길 24-1',
+            'CU마산양덕한일2차': '경남 창원시 마산회원구 양덕남1길 24-1',
+            'CU 마산양덕한일2차': '경남 창원시 마산회원구 양덕남1길 24-1',
+            'CU진해석동블루점': '경남 창원시 진해구 냉천로36번길 8',
+            'CU 진해석동블루점': '경남 창원시 진해구 냉천로36번길 8',
+            'CU진해석동블루': '경남 창원시 진해구 냉천로36번길 8',
+            'CU 진해석동블루': '경남 창원시 진해구 냉천로36번길 8',
+            'CU진해풍호행복점': '경남 창원시 진해구 풍호로 5',
+            'CU 진해풍호행복점': '경남 창원시 진해구 풍호로 5',
+            'CU진해풍호행복': '경남 창원시 진해구 풍호로 5',
+            'CU 진해풍호행복': '경남 창원시 진해구 풍호로 5',
+            'CU진해동진로점': '경남 창원시 진해구 동진로 133',
+            'CU 진해동진로점': '경남 창원시 진해구 동진로 133',
+            'CU진해동진로': '경남 창원시 진해구 동진로 133',
+            'CU 진해동진로': '경남 창원시 진해구 동진로 133',
+            'CU서김해산단점': '경남 김해시 서김해산단안길 66',
+            'CU 서김해산단점': '경남 김해시 서김해산단안길 66',
+            'CU서김해산단': '경남 김해시 서김해산단안길 66',
+            'CU 서김해산단': '경남 김해시 서김해산단안길 66',
+            'CU울산뉴복산점': '울산 중구 도화골8길 1',
+            'CU 울산뉴복산점': '울산 중구 도화골8길 1',
+            'CU울산뉴복산': '울산 중구 도화골8길 1',
+            'CU 울산뉴복산': '울산 중구 도화골8길 1',
+            'CU번영로센터리지점': '울산 중구 복산1길 1',
+            'CU 번영로센터리지점': '울산 중구 복산1길 1',
+            'CU번영로센터리지': '울산 중구 복산1길 1',
+            'CU 번영로센터리지': '울산 중구 복산1길 1',
         };
+        
+        // 주소 정규화 함수: "~길/로 숫자" 뒤의 부가 정보 제거
+        function normalizeAddress(address) {
+            // "산호서6길 1 상가 1층" → "산호서6길 1"
+            // "화동로 112 2층" → "화동로 112"
+            const match = address.match(/^(.+[길로]\s*\d+[-\d]*)(\s+.*)?$/);
+            if (match && match[2]) {
+                const normalized = match[1].trim();
+                console.log(`주소 정규화: "${address}" → "${normalized}"`);
+                return normalized;
+            }
+            return address;
+        }
         
         // 면접원 데이터 (2024년 12월 최신화 - 123명)
 
@@ -2657,12 +2706,14 @@ async function searchInterviewer(event) {
             }
             
             // 도로명 주소 패턴 감지 (~길, ~로로 끝나거나 숫자가 포함된 주소)
-            const isRoadAddress = /[길로]\s*\d*[-\d]*$/.test(trimmedQuery) || /\d+[-번지]*$/.test(trimmedQuery);
+            const isRoadAddress = /[길로]\s*\d+[-\d]*/.test(trimmedQuery) || /\d+[-번지]*$/.test(trimmedQuery);
             
             // 도로명 주소인 경우 주소 검색 API 먼저 시도
             if (isRoadAddress && !isRetry) {
+                // 주소 정규화 (부가 정보 제거)
+                const normalizedQuery = normalizeAddress(trimmedQuery);
                 console.log(`도로명 주소 감지: "${trimmedQuery}" - 주소 검색 API 사용`);
-                const addressUrl = `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(trimmedQuery)}`;
+                const addressUrl = `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(normalizedQuery)}`;
                 const addressResponse = await fetch(addressUrl, {
                     headers: { 'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}` }
                 });
