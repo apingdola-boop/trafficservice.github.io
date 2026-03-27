@@ -1,6 +1,6 @@
 {
   "name": "유류비 계산기 - Route Calc",
-  "short_name": "유류비",
+  "short_name": "유류비 계산기",
   "description": "카카오 API 기반 실제 경로 거리 & 유류비 계산기",
   "start_url": ".",
   "scope": ".",
