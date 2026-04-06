@@ -1978,6 +1978,11 @@
                             <option value="busan@hrc.co.kr">김선희 팀장</option>
                             <option value="busan2@hrc.co.kr">홍서림 프로</option>
                         </select>
+                        <select id="email-service-select" class="supervisor-select" style="min-width: 120px;">
+                            <option value="gmail">Gmail</option>
+                            <option value="naver">네이버 메일</option>
+                            <option value="default">기본 앱</option>
+                        </select>
                         <button class="send-btn" onclick="sendToSupervisor()">
                             📤 이메일 보내기
                         </button>
@@ -3940,6 +3945,7 @@ async function searchInterviewer(event) {
             const supervisorSelect = document.getElementById('supervisor-select');
             const supervisorEmail = supervisorSelect.value;
             const supervisorName = supervisorSelect.options[supervisorSelect.selectedIndex].text;
+            const emailService = document.getElementById('email-service-select').value;
             
             if (!supervisorEmail) {
                 showToast('⚠️ 슈퍼바이저를 선택해주세요!', 'error');
@@ -3974,21 +3980,34 @@ async function searchInterviewer(event) {
                 ? `\n📎 첨부 파일:\n   1. 엑셀 파일 (정산표)\n   2. 영수증 이미지 (${Object.keys(window.receiptImages).length}개)\n\n※ 위 파일들을 이 이메일에 첨부해주세요.`
                 : `\n📎 첨부 파일:\n   1. 엑셀 파일 (정산표)\n\n※ 엑셀 파일을 이 이메일에 첨부해주세요.`;
             
-            const subject = encodeURIComponent(`[교통비 정산] ${dateStr} - 총 ${totalCost.toLocaleString()}원`);
-            const body = encodeURIComponent(
+            const subject = `[교통비 정산] ${dateStr} - 총 ${totalCost.toLocaleString()}원`;
+            const bodyText = 
                 `안녕하세요, ${supervisorName}님.\n\n` +
                 `교통비 정산 내역을 보내드립니다.\n\n` +
                 `📅 작성일: ${dateStr}\n` +
                 `💰 총 금액: ${totalCost.toLocaleString()}원\n\n` +
                 `📋 세부 내역:\n${routeList}` +
                 `${receiptNote}\n\n` +
-                `감사합니다.`
-            );
+                `감사합니다.`;
             
-            // 이메일 클라이언트 열기
-            window.location.href = `mailto:${supervisorEmail}?subject=${subject}&body=${body}`;
+            let emailUrl;
             
-            showToast(`📧 ${supervisorName}에게 이메일 작성 창이 열렸습니다! 파일을 첨부해주세요.`, 'success');
+            if (emailService === 'gmail') {
+                // Gmail 웹 compose URL
+                emailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(supervisorEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+            } else if (emailService === 'naver') {
+                // 네이버 메일 compose URL
+                emailUrl = `https://mail.naver.com/write?to=${encodeURIComponent(supervisorEmail)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+            } else {
+                // 기본 이메일 앱 (mailto)
+                emailUrl = `mailto:${supervisorEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+            }
+            
+            // 새 창에서 이메일 열기
+            window.open(emailUrl, '_blank');
+            
+            const serviceNames = { gmail: 'Gmail', naver: '네이버 메일', default: '이메일 앱' };
+            showToast(`📧 ${serviceNames[emailService]}에서 ${supervisorName}에게 보내기 창이 열렸습니다!`, 'success');
         }
 
         // 페이지 로드시 오늘 날짜 기본값 설정
