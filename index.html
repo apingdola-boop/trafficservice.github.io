@@ -1343,6 +1343,176 @@
             margin-top: 20px;
         }
 
+        /* 슈퍼바이저 보내기 섹션 */
+        .supervisor-send-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .supervisor-select-wrapper {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .supervisor-select {
+            flex: 1;
+            min-width: 150px;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        .supervisor-select:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+        }
+
+        .supervisor-select option {
+            background: #1a1a2e;
+            color: white;
+        }
+
+        .send-btn {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        /* 영수증 첨부 섹션 */
+        .receipt-upload-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+        }
+
+        .receipt-upload-section h4 {
+            margin-bottom: 15px;
+            color: var(--accent-yellow);
+            font-size: 0.95rem;
+        }
+
+        .receipt-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        @media (max-width: 700px) {
+            .receipt-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .receipt-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .receipt-item > label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .receipt-upload-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .receipt-upload-wrapper input[type="file"] {
+            display: none;
+        }
+
+        .upload-btn {
+            padding: 8px 12px;
+            background: rgba(0, 212, 255, 0.2);
+            border: 1px solid var(--accent-cyan);
+            border-radius: 8px;
+            color: var(--accent-cyan);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-btn:hover {
+            background: var(--accent-cyan);
+            color: #000;
+        }
+
+        .file-name {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 120px;
+        }
+
+        .receipt-preview {
+            margin-top: 10px;
+            max-height: 100px;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+
+        .receipt-preview img {
+            width: 100%;
+            height: auto;
+            max-height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        /* 영수증 다운로드 버튼 */
+        .receipt-download-btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #ffa726, #fb8c00);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 500;
+            font-family: inherit;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .receipt-download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 167, 38, 0.4);
+        }
+
         /* 추가하기 버튼 */
         .add-btn {
             display: inline-block;
@@ -1517,6 +1687,13 @@
             </div>
         </div>
         <div class="recent-searches" id="interviewer-recent-searches"></div>
+        <div class="sidebar-results" id="sidebar-results">
+            <div class="no-results">
+                <div class="icon">🔍</div>
+                <p>면접원 ID 또는 이름을 검색하세요</p>
+                <p style="font-size: 0.85rem; margin-top: 10px;">검색 결과에서 출발지 또는<br>도착지 버튼을 선택하세요.</p>
+            </div>
+        </div>
         <div class="sidebar-add-form">
             <h3>➕ 면접원 추가</h3>
             <div class="field-row full">
@@ -1534,13 +1711,6 @@
             </div>
             <button onclick="importInterviewersFromExcel()">엑셀로 면접원 추가</button>
             <button onclick="addInterviewer()">면접원 추가하기</button>
-        </div>
-        <div class="sidebar-results" id="sidebar-results">
-            <div class="no-results">
-                <div class="icon">🔍</div>
-                <p>면접원 ID 또는 이름을 검색하세요</p>
-                <p style="font-size: 0.85rem; margin-top: 10px;">검색 결과에서 출발지 또는<br>도착지 버튼을 선택하세요.</p>
-            </div>
         </div>
     </aside>
 
@@ -1718,6 +1888,40 @@
             <p style="margin-top: 12px; font-size: 0.8rem; color: var(--text-secondary);">
                 💡 유류비: 100~200원/km 권장 | 통행료, 식비는 선택 입력
             </p>
+
+            <!-- 영수증 사진 첨부 -->
+            <div class="receipt-upload-section">
+                <h4>📷 영수증 사진 첨부</h4>
+                <div class="receipt-grid">
+                    <div class="receipt-item">
+                        <label>🛣️ 통행료 영수증</label>
+                        <div class="receipt-upload-wrapper">
+                            <input type="file" id="toll_receipt" accept="image/*" onchange="previewReceipt(this, 'toll')">
+                            <label for="toll_receipt" class="upload-btn">📎 파일 선택</label>
+                            <span class="file-name" id="toll_file_name">선택된 파일 없음</span>
+                        </div>
+                        <div class="receipt-preview" id="toll_preview"></div>
+                    </div>
+                    <div class="receipt-item">
+                        <label>🍽️ 식비 영수증</label>
+                        <div class="receipt-upload-wrapper">
+                            <input type="file" id="meal_receipt" accept="image/*" onchange="previewReceipt(this, 'meal')">
+                            <label for="meal_receipt" class="upload-btn">📎 파일 선택</label>
+                            <span class="file-name" id="meal_file_name">선택된 파일 없음</span>
+                        </div>
+                        <div class="receipt-preview" id="meal_preview"></div>
+                    </div>
+                    <div class="receipt-item">
+                        <label>📦 기타 영수증</label>
+                        <div class="receipt-upload-wrapper">
+                            <input type="file" id="other_receipt" accept="image/*" onchange="previewReceipt(this, 'other')">
+                            <label for="other_receipt" class="upload-btn">📎 파일 선택</label>
+                            <span class="file-name" id="other_file_name">선택된 파일 없음</span>
+                        </div>
+                        <div class="receipt-preview" id="other_preview"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="error-message" id="error">
@@ -1776,7 +1980,7 @@
 
                 <div class="export-buttons">
                     <a class="kakao-link" id="kakao-navi-link" href="#" target="_blank">
-                        🗺️ 카카오맵에서 경로 보기
+                        🗺️ 네이버 지도에서 경로 보기
                     </a>
                     <button class="add-btn" onclick="addToAccumulated()">
                         ➕ 추가하기
@@ -1784,6 +1988,25 @@
                     <button class="export-btn" onclick="exportToExcel()">
                         📊 엑셀로 내보내기
                     </button>
+                    <button class="receipt-download-btn" onclick="downloadReceipts()">
+                        🧾 영수증 다운로드
+                    </button>
+                </div>
+                
+                <!-- 슈퍼바이저에게 보내기 -->
+                <div class="supervisor-send-section">
+                    <h4 style="margin: 20px 0 10px; color: var(--accent-cyan);">📧 슈퍼바이저에게 보내기</h4>
+                    <div class="supervisor-select-wrapper">
+                        <select id="supervisor-select" class="supervisor-select">
+                            <option value="">슈퍼바이저 선택</option>
+                            <option value="busan1@hrc.co.kr">손정범 프로</option>
+                            <option value="busan@hrc.co.kr">김선희 팀장</option>
+                            <option value="busan2@hrc.co.kr">홍서림 프로</option>
+                        </select>
+                        <button class="send-btn" onclick="sendToSupervisor()">
+                            📤 이메일 보내기
+                        </button>
+                    </div>
                 </div>
 
                 <div class="accumulated-list" id="accumulated-list" style="display: none;">
@@ -3652,6 +3875,46 @@ async function searchInterviewer(event) {
                 XLSX.utils.book_append_sheet(wb, sheetWs, sheetName);
             }
 
+            // 영수증 정보 시트 추가 (영수증이 있는 경우)
+            if (window.receiptImages && Object.keys(window.receiptImages).length > 0) {
+                const receiptWs = {};
+                const receiptHeaders = ['구분', '파일 첨부 여부', '비고'];
+                
+                // 제목
+                receiptWs['A1'] = { v: '📷 영수증 첨부 내역', t: 's', s: { font: { name: '맑은 고딕', sz: 14, bold: true }, alignment: { horizontal: 'center' } } };
+                receiptWs['B1'] = { v: '', t: 's' };
+                receiptWs['C1'] = { v: '', t: 's' };
+                
+                // 헤더
+                receiptWs['A3'] = { v: '구분', t: 's', s: { font: { bold: true }, fill: { fgColor: { rgb: 'DDDDDD' } }, alignment: { horizontal: 'center' } } };
+                receiptWs['B3'] = { v: '첨부 여부', t: 's', s: { font: { bold: true }, fill: { fgColor: { rgb: 'DDDDDD' } }, alignment: { horizontal: 'center' } } };
+                receiptWs['C3'] = { v: '비고', t: 's', s: { font: { bold: true }, fill: { fgColor: { rgb: 'DDDDDD' } }, alignment: { horizontal: 'center' } } };
+                
+                // 데이터
+                const receiptTypes = [
+                    { key: 'toll', label: '🛣️ 통행료 영수증' },
+                    { key: 'meal', label: '🍽️ 식비 영수증' },
+                    { key: 'other', label: '📦 기타 영수증' }
+                ];
+                
+                receiptTypes.forEach((type, idx) => {
+                    const row = 4 + idx;
+                    const hasReceipt = window.receiptImages[type.key] ? '✅ 첨부됨' : '❌ 없음';
+                    receiptWs['A' + row] = { v: type.label, t: 's', s: { alignment: { horizontal: 'left' } } };
+                    receiptWs['B' + row] = { v: hasReceipt, t: 's', s: { alignment: { horizontal: 'center' } } };
+                    receiptWs['C' + row] = { v: window.receiptImages[type.key] ? '이미지 별도 다운로드 필요' : '', t: 's' };
+                });
+                
+                // 안내 문구
+                receiptWs['A8'] = { v: '※ 영수증 이미지는 "영수증 다운로드" 버튼으로 별도 저장해주세요.', t: 's', s: { font: { color: { rgb: 'FF0000' } } } };
+                
+                receiptWs['!ref'] = 'A1:C8';
+                receiptWs['!cols'] = [{ wch: 20 }, { wch: 15 }, { wch: 25 }];
+                receiptWs['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }];
+                
+                XLSX.utils.book_append_sheet(wb, receiptWs, '영수증 첨부');
+            }
+
             // 파일명 생성
             const projectNumForFile = result.projectNumber || '프로젝트';
             const interviewerNameForFile = result.interviewerName || '면접원';
@@ -3660,7 +3923,33 @@ async function searchInterviewer(event) {
             // 파일 다운로드
             XLSX.writeFile(wb, fileName);
             
-            showToast('✅ 엑셀 파일이 다운로드되었습니다!', 'start');
+            // 영수증 이미지 다운로드 안내
+            if (window.receiptImages && Object.keys(window.receiptImages).length > 0) {
+                showToast('✅ 엑셀 파일 다운로드 완료! 영수증 이미지도 다운로드하세요.', 'start');
+            } else {
+                showToast('✅ 엑셀 파일이 다운로드되었습니다!', 'start');
+            }
+        }
+        
+        // 영수증 이미지 다운로드
+        function downloadReceipts() {
+            if (!window.receiptImages || Object.keys(window.receiptImages).length === 0) {
+                showToast('⚠️ 첨부된 영수증이 없습니다!', 'error');
+                return;
+            }
+            
+            const types = { toll: '통행료', meal: '식비', other: '기타' };
+            
+            Object.keys(window.receiptImages).forEach(type => {
+                const link = document.createElement('a');
+                link.href = window.receiptImages[type];
+                link.download = `영수증_${types[type]}_${new Date().toISOString().slice(0, 10)}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+            
+            showToast(`📥 ${Object.keys(window.receiptImages).length}개 영수증 다운로드 완료!`, 'start');
         }
 
         // 엔터키로 검색
@@ -3671,6 +3960,81 @@ async function searchInterviewer(event) {
         document.getElementById('end').addEventListener('keypress', e => {
             if (e.key === 'Enter') calculate();
         });
+
+        // 영수증 미리보기
+        function previewReceipt(input, type) {
+            const preview = document.getElementById(`${type}_preview`);
+            const fileName = document.getElementById(`${type}_file_name`);
+            
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                fileName.textContent = file.name;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `<img src="${e.target.result}" alt="${type} 영수증">`;
+                    
+                    // 전역 변수에 이미지 데이터 저장
+                    if (!window.receiptImages) window.receiptImages = {};
+                    window.receiptImages[type] = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.innerHTML = '';
+                fileName.textContent = '선택된 파일 없음';
+                if (window.receiptImages) delete window.receiptImages[type];
+            }
+        }
+
+        // 슈퍼바이저에게 이메일 보내기
+        async function sendToSupervisor() {
+            const supervisorSelect = document.getElementById('supervisor-select');
+            const supervisorEmail = supervisorSelect.value;
+            const supervisorName = supervisorSelect.options[supervisorSelect.selectedIndex].text;
+            
+            if (!supervisorEmail) {
+                showToast('⚠️ 슈퍼바이저를 선택해주세요!', 'error');
+                return;
+            }
+            
+            if (accumulatedItems.length === 0 && !lastCalculationResult) {
+                showToast('⚠️ 먼저 경로를 계산하거나 추가해주세요!', 'error');
+                return;
+            }
+            
+            // 이메일 제목과 본문 생성
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+            
+            let totalCost = 0;
+            let routeList = '';
+            
+            if (accumulatedItems.length > 0) {
+                accumulatedItems.forEach((item, idx) => {
+                    routeList += `${idx + 1}. ${item.date} | ${item.start} → ${item.end} | ${item.total.toLocaleString()}원\n`;
+                    totalCost += item.total;
+                });
+            } else if (lastCalculationResult) {
+                routeList = `${lastCalculationResult.date} | ${lastCalculationResult.start} → ${lastCalculationResult.end} | ${lastCalculationResult.total.toLocaleString()}원`;
+                totalCost = lastCalculationResult.total;
+            }
+            
+            const subject = encodeURIComponent(`[교통비 정산] ${dateStr} - 총 ${totalCost.toLocaleString()}원`);
+            const body = encodeURIComponent(
+                `안녕하세요, ${supervisorName}님.\n\n` +
+                `교통비 정산 내역을 보내드립니다.\n\n` +
+                `📅 작성일: ${dateStr}\n` +
+                `💰 총 금액: ${totalCost.toLocaleString()}원\n\n` +
+                `📋 세부 내역:\n${routeList}\n\n` +
+                `※ 엑셀 파일은 별도로 첨부해주세요.\n\n` +
+                `감사합니다.`
+            );
+            
+            // 이메일 클라이언트 열기
+            window.location.href = `mailto:${supervisorEmail}?subject=${subject}&body=${body}`;
+            
+            showToast(`📧 ${supervisorName}에게 이메일 작성 창이 열렸습니다!`, 'success');
+        }
 
         // 페이지 로드시 오늘 날짜 기본값 설정
         window.addEventListener('DOMContentLoaded', () => {
