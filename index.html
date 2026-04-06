@@ -1399,6 +1399,47 @@
             box-shadow: 0 5px 20px rgba(255, 107, 107, 0.4);
         }
 
+        .email-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .email-btn {
+            flex: 1;
+            min-width: 180px;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-family: inherit;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .email-btn.naver-btn {
+            background: linear-gradient(135deg, #03C75A, #02a84d);
+            color: white;
+        }
+
+        .email-btn.naver-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(3, 199, 90, 0.4);
+        }
+
+        .email-btn.gmail-btn {
+            background: linear-gradient(135deg, #EA4335, #c5382c);
+            color: white;
+        }
+
+        .email-btn.gmail-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(234, 67, 53, 0.4);
+        }
+
         /* 영수증 첨부 섹션 */
         .receipt-upload-section {
             margin-top: 20px;
@@ -1978,13 +2019,13 @@
                             <option value="busan@hrc.co.kr">김선희 팀장</option>
                             <option value="busan2@hrc.co.kr">홍서림 프로</option>
                         </select>
-                        <select id="email-service-select" class="supervisor-select" style="min-width: 120px;">
-                            <option value="gmail">Gmail</option>
-                            <option value="naver">네이버 메일</option>
-                            <option value="default">기본 앱</option>
-                        </select>
-                        <button class="send-btn" onclick="sendToSupervisor()">
-                            📤 이메일 보내기
+                    </div>
+                    <div class="email-buttons">
+                        <button class="email-btn naver-btn" onclick="sendToSupervisor('naver')">
+                            📧 네이버 메일로 보내기
+                        </button>
+                        <button class="email-btn gmail-btn" onclick="sendToSupervisor('gmail')">
+                            📧 Gmail로 보내기
                         </button>
                     </div>
                 </div>
@@ -3941,14 +3982,13 @@ async function searchInterviewer(event) {
         }
 
         // 슈퍼바이저에게 이메일 보내기
-        async function sendToSupervisor() {
+        function sendToSupervisor(emailService) {
             const supervisorSelect = document.getElementById('supervisor-select');
             const supervisorEmail = supervisorSelect.value;
             const supervisorName = supervisorSelect.options[supervisorSelect.selectedIndex].text;
-            const emailService = document.getElementById('email-service-select').value;
             
             if (!supervisorEmail) {
-                showToast('⚠️ 슈퍼바이저를 선택해주세요!', 'error');
+                showToast('⚠️ 슈퍼바이저를 먼저 선택해주세요!', 'error');
                 return;
             }
             
@@ -3977,8 +4017,8 @@ async function searchInterviewer(event) {
             // 영수증 첨부 여부 확인
             const hasReceipts = window.receiptImages && Object.keys(window.receiptImages).length > 0;
             const receiptNote = hasReceipts 
-                ? `\n📎 첨부 파일:\n   1. 엑셀 파일 (정산표)\n   2. 영수증 이미지 (${Object.keys(window.receiptImages).length}개)\n\n※ 위 파일들을 이 이메일에 첨부해주세요.`
-                : `\n📎 첨부 파일:\n   1. 엑셀 파일 (정산표)\n\n※ 엑셀 파일을 이 이메일에 첨부해주세요.`;
+                ? `\n📎 첨부할 파일:\n   1. 엑셀 파일 (정산표)\n   2. 영수증 이미지 (${Object.keys(window.receiptImages).length}개)\n\n※ 위 파일들을 첨부해주세요.`
+                : `\n📎 첨부할 파일:\n   1. 엑셀 파일 (정산표)\n\n※ 엑셀 파일을 첨부해주세요.`;
             
             const subject = `[교통비 정산] ${dateStr} - 총 ${totalCost.toLocaleString()}원`;
             const bodyText = 
@@ -3996,18 +4036,28 @@ async function searchInterviewer(event) {
                 // Gmail 웹 compose URL
                 emailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(supervisorEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
             } else if (emailService === 'naver') {
-                // 네이버 메일 compose URL
-                emailUrl = `https://mail.naver.com/write?to=${encodeURIComponent(supervisorEmail)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
-            } else {
-                // 기본 이메일 앱 (mailto)
-                emailUrl = `mailto:${supervisorEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+                // 네이버 메일 - 새 메일 작성 페이지로 이동 후 안내
+                // 네이버는 URL 파라미터로 받는 사람/제목/본문을 직접 지원하지 않음
+                // 대신 클립보드에 정보 복사 후 메일 작성 페이지 열기
+                const mailInfo = `받는 사람: ${supervisorEmail}\n제목: ${subject}\n\n${bodyText}`;
+                
+                // 클립보드에 복사
+                navigator.clipboard.writeText(mailInfo).then(() => {
+                    showToast('📋 이메일 내용이 클립보드에 복사되었습니다! 네이버 메일에 붙여넣기 하세요.', 'success');
+                }).catch(() => {
+                    // 클립보드 복사 실패 시
+                    prompt('아래 내용을 복사하세요:', mailInfo);
+                });
+                
+                // 네이버 메일 작성 페이지 열기
+                window.open('https://mail.naver.com/v2/new', '_blank');
+                return;
             }
             
             // 새 창에서 이메일 열기
             window.open(emailUrl, '_blank');
             
-            const serviceNames = { gmail: 'Gmail', naver: '네이버 메일', default: '이메일 앱' };
-            showToast(`📧 ${serviceNames[emailService]}에서 ${supervisorName}에게 보내기 창이 열렸습니다!`, 'success');
+            showToast(`📧 Gmail에서 ${supervisorName}에게 보내기 창이 열렸습니다!`, 'success');
         }
 
         // 페이지 로드시 오늘 날짜 기본값 설정
