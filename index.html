@@ -4151,6 +4151,13 @@ async function searchInterviewer(event) {
                 alert('⚠️ 면접원 검색에서 면접원을 선택해 주세요!\n(출발지/도착지에 주소가 들어가야 제출자 ID가 잡힙니다.)');
                 return;
             }
+
+            // 프로젝트 번호가 없으면 companychat에서 프로젝트를 특정할 수 없어 여러 방에 중복 기록될 수 있음
+            const pn = lastCalculationResult ? String(lastCalculationResult.projectNumber || '').trim() : '';
+            if (!pn) {
+                alert('⚠️ 프로젝트 번호를 먼저 입력/선택해 주세요!\n(프로젝트 검색으로 입력하거나 프로젝트 번호 3칸을 채운 뒤 계산/전송하세요.)');
+                return;
+            }
             
             if (accumulatedResults.length === 0 && !lastCalculationResult) {
                 alert('⚠️ 먼저 경로를 계산하거나 추가해주세요!');
@@ -4222,7 +4229,7 @@ async function searchInterviewer(event) {
                     type: 'companychat-traffic-submitted',
                     loginId: loginIdStr,
                     name: interviewerName,
-                    projectNumber: lastCalculationResult ? (lastCalculationResult.projectNumber || '') : '',
+                    projectNumber: pn,
                     projectName: lastCalculationResult ? (lastCalculationResult.projectName || '') : '',
                     supervisorId: supervisorId,
                     source: 'route-calc',
