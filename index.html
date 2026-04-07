@@ -3974,8 +3974,8 @@ async function searchInterviewer(event) {
 
             // 파일명 생성
             const projectNumForFile = result.projectNumber || '프로젝트';
-            const interviewerIdForFile = result.interviewerId || '면접원ID';
-            const fileName = `${projectNumForFile}_${interviewerIdForFile}_${monthNum}월.xlsx`;
+            const interviewerNameForFile = result.interviewerName || '면접원';
+            const fileName = `${projectNumForFile}_${interviewerNameForFile}_${monthNum}월.xlsx`;
             
             if (opts && opts.returnBlob) {
                 const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
