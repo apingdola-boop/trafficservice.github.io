@@ -4174,6 +4174,7 @@ async function searchInterviewer(event) {
             const timestamp = Date.now();
             const interviewerName = selectedInterviewer.name || '미지정';
             const interviewerId = selectedInterviewer.id || 'unknown';
+            const loginIdStr = String(interviewerId).trim();
             const folderName = `${interviewerId}_${timestamp}`;
             
             let totalCost = 0;
@@ -4225,7 +4226,6 @@ async function searchInterviewer(event) {
                 
                 // 3. companychat에 postMessage 전송
                 btn.textContent = '📡 전송 중...';
-                const loginIdStr = String(interviewerId).trim();
                 const postData = {
                     type: 'companychat-traffic-submitted',
                     loginId: loginIdStr,
