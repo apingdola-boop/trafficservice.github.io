@@ -4234,7 +4234,7 @@ async function searchInterviewer(event) {
                 const excelBlob = generateExcelBlob();
                 let excelUrl = null;
                 if (excelBlob) {
-                    const excelFileName = `교통비정산_${interviewerName}_${timestamp}.xlsx`;
+                    const excelFileName = `traffic_${interviewerId}_${timestamp}.xlsx`;
                     excelUrl = await uploadToSupabase(excelBlob, excelFileName, folderName);
                     console.log('엑셀 업로드 완료:', excelUrl);
                 }
@@ -4251,7 +4251,7 @@ async function searchInterviewer(event) {
                         const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
                         const ext = mimeType.split('/')[1] || 'jpg';
                         const imageBlob = base64ToBlob(base64, mimeType);
-                        const imageFileName = `영수증_${type}_${timestamp}.${ext}`;
+                        const imageFileName = `receipt_${type}_${timestamp}.${ext}`;
                         imageUrls[type] = await uploadToSupabase(imageBlob, imageFileName, folderName);
                         console.log(`${type} 이미지 업로드 완료:`, imageUrls[type]);
                     }
