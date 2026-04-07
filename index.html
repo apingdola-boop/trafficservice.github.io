@@ -4222,6 +4222,8 @@ async function searchInterviewer(event) {
                     type: 'companychat-traffic-submitted',
                     loginId: loginIdStr,
                     name: interviewerName,
+                    projectNumber: lastCalculationResult ? (lastCalculationResult.projectNumber || '') : '',
+                    projectName: lastCalculationResult ? (lastCalculationResult.projectName || '') : '',
                     supervisorId: supervisorId,
                     source: 'route-calc',
                     files: {
