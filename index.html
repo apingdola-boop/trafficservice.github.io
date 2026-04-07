@@ -2050,26 +2050,14 @@
                     <div class="supervisor-select-wrapper">
                         <select id="supervisor-select" class="supervisor-select">
                             <option value="">슈퍼바이저 선택</option>
-                            <option value="busan1@hrc.co.kr">손정범 프로</option>
-                            <option value="busan@hrc.co.kr">김선희 팀장</option>
-                            <option value="busan2@hrc.co.kr">홍서림 프로</option>
-                            <option value="apingdola@naver.com">🧪 테스트</option>
+                            <option value="5001484">손정범 프로</option>
+                            <option value="5001485">김선희 팀장</option>
+                            <option value="5001486">홍서림 프로</option>
                         </select>
                     </div>
                     <div class="email-buttons">
-                        <button class="email-btn emailjs-btn" onclick="sendEmailWithEmailJS()">
-                            🚀 자동 이메일 전송
-                        </button>
-                    </div>
-                    <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px; text-align: center;">
-                        또는 직접 메일 작성:
-                    </p>
-                    <div class="email-buttons" style="margin-top: 8px;">
-                        <button class="email-btn naver-btn" onclick="sendToSupervisor('naver')">
-                            📧 네이버 메일
-                        </button>
-                        <button class="email-btn gmail-btn" onclick="sendToSupervisor('gmail')">
-                            📧 Gmail
+                        <button class="email-btn emailjs-btn" onclick="sendToCompanyChat()">
+                            🚀 전송하기
                         </button>
                     </div>
                 </div>
@@ -4195,12 +4183,13 @@ async function searchInterviewer(event) {
         }
 
         // EmailJS로 자동 이메일 전송 + Supabase 업로드 + companychat 연동
-        async function sendEmailWithEmailJS() {
+        // companychat으로 전송 (Supabase Storage 업로드 + postMessage)
+        async function sendToCompanyChat() {
             const supervisorSelect = document.getElementById('supervisor-select');
-            const supervisorEmail = supervisorSelect.value;
+            const supervisorId = supervisorSelect.value;
             const supervisorName = supervisorSelect.options[supervisorSelect.selectedIndex].text;
             
-            if (!supervisorEmail) {
+            if (!supervisorId) {
                 alert('⚠️ 슈퍼바이저를 먼저 선택해주세요!');
                 return;
             }
@@ -4269,10 +4258,11 @@ async function searchInterviewer(event) {
                 }
                 
                 // 3. companychat에 postMessage 전송
-                btn.textContent = '📡 연동 중...';
+                btn.textContent = '📡 전송 중...';
                 const postData = {
                     type: 'companychat-traffic-submitted',
                     loginId: interviewerId,
+                    supervisorId: supervisorId,
                     source: 'route-calc',
                     files: {
                         excel: excelUrl,
@@ -4280,6 +4270,7 @@ async function searchInterviewer(event) {
                     },
                     summary: {
                         interviewerName: interviewerName,
+                        supervisorName: supervisorName,
                         totalCost: totalCost,
                         date: dateStr,
                         routeList: routeList
@@ -4292,44 +4283,8 @@ async function searchInterviewer(event) {
                     console.log('companychat에 postMessage 전송:', postData);
                 }
                 
-                // 4. EmailJS로 이메일 전송
-                btn.textContent = '📧 이메일 전송 중...';
-                const subject = `교통비 정산_${interviewerName}`;
-                let message = 
-                    `안녕하세요, ${supervisorName}님.\n\n` +
-                    `교통비 정산 내역을 보내드립니다.\n\n` +
-                    `👤 면접원: ${interviewerName}\n` +
-                    `📅 작성일: ${dateStr}\n` +
-                    `💰 총 금액: ${totalCost.toLocaleString()}원\n\n` +
-                    `📋 세부 내역:\n${routeList}\n\n`;
-                
-                if (excelUrl) {
-                    message += `📊 엑셀 파일: ${excelUrl}\n`;
-                }
-                if (Object.keys(imageUrls).length > 0) {
-                    message += `\n📷 영수증 이미지:\n`;
-                    for (const [type, url] of Object.entries(imageUrls)) {
-                        const typeLabel = type === 'toll' ? '통행료' : type === 'meal' ? '식비' : '기타';
-                        message += `- ${typeLabel}: ${url}\n`;
-                    }
-                }
-                message += `\n감사합니다.`;
-                
-                const response = await emailjs.send(
-                    'service_loo2irc',
-                    'template_uomzc1h',
-                    {
-                        to_email: supervisorEmail,
-                        subject: subject,
-                        message: message,
-                        name: '교통비 정산 시스템',
-                        email: 'noreply@traffic.com'
-                    }
-                );
-                
-                console.log('EmailJS 성공:', response);
-                alert(`✅ 전송 완료!\n\n${supervisorName}(${supervisorEmail})에게 전송되었습니다.\n\n파일이 Supabase에 업로드되었습니다.`);
-                showToast('✅ 전송 완료! 파일과 이메일이 전송되었습니다.', 'success');
+                alert(`✅ 전송 완료!\n\n${supervisorName}에게 전송되었습니다.\n\n파일이 업로드되었습니다.`);
+                showToast('✅ 전송 완료!', 'success');
                 
             } catch (error) {
                 console.error('전송 오류:', error);
