@@ -4219,10 +4219,29 @@ async function searchInterviewer(event) {
             return '*';
         }
 
+        async function insertTrafficSubmissionSignal(postData) {
+            try {
+                const { error } = await supabaseClient.from('traffic_submission_signals').insert({
+                    login_id: String(postData.loginId || '').trim(),
+                    iv_name: postData.name || null,
+                    payload: postData,
+                });
+                if (error) {
+                    console.error('[companychat 브리지] Supabase insert 오류:', error);
+                    return false;
+                }
+                console.log('[companychat 브리지] Supabase에 제출 기록됨 (단독 탭·다른 브라우저 동기화용)');
+                return true;
+            } catch (e) {
+                console.error('[companychat 브리지]', e);
+                return false;
+            }
+        }
+
         function postCompanyChatTrafficPayload(payload) {
             const wins = getCompanyChatWindowsForPostMessage();
             if (!wins.length) {
-                console.warn('[companychat 연동] 부모/opener 없음. companychat 교통비 탭의 iframe 안에서 쓰거나「새 탭에서 열기」로 연 뒤 전송하세요.');
+                console.warn('[companychat 연동] 부모/opener 없음 → Supabase 큐로 넘깁니다. H-채팅 교통비 탭을 열어 두면 자동 반영됩니다.');
                 return false;
             }
             const origin = guessCompanyChatTargetOrigin();
@@ -4343,9 +4362,23 @@ async function searchInterviewer(event) {
                     }
                 };
                 
-                postCompanyChatTrafficPayload(postData);
+                const viaWindow = postCompanyChatTrafficPayload(postData);
+                let viaBridge = false;
+                if (!viaWindow) {
+                    btn.textContent = '☁️ companychat 동기화 큐 기록...';
+                    viaBridge = await insertTrafficSubmissionSignal(postData);
+                    if (!viaBridge) {
+                        console.warn('[companychat 브리지] 실패 시 Supabase에 traffic_submission_signals 테이블·RLS(002 마이그레이션)를 확인하세요.');
+                    }
+                }
                 
-                alert(`✅ 전송 완료!\n\n${supervisorName}에게 전송되었습니다.\n\n파일이 업로드되었습니다.`);
+                let doneMsg = `✅ 전송 완료!\n\n${supervisorName}에게 전송되었습니다.\n\n파일이 업로드되었습니다.`;
+                if (!viaWindow) {
+                    doneMsg += viaBridge
+                        ? '\n\n※ 유류비를 단독 탭에서 쓰셨습니다. H-채팅 교통비 탭을 열어 두면 곧 표에 반영됩니다.'
+                        : '\n\n※ companychat 연동 큐 기록에 실패했습니다. 관리자에게 문의하세요.';
+                }
+                alert(doneMsg);
                 showToast('✅ 전송 완료!', 'success');
                 
             } catch (error) {
