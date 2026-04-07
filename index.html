@@ -4182,6 +4182,65 @@ async function searchInterviewer(event) {
             return urlData.publicUrl;
         }
 
+        /** companychat(iframe 부모 또는 window.open으로 연 opener)에 동일 페이로드 전달 */
+        function getCompanyChatWindowsForPostMessage() {
+            const out = [];
+            try {
+                if (window.parent && window.parent !== window) out.push(window.parent);
+            } catch (e) {}
+            try {
+                if (window.opener && !window.opener.closed) out.push(window.opener);
+            } catch (e) {}
+            const seen = new Set();
+            return out.filter(function (w) {
+                if (seen.has(w)) return false;
+                seen.add(w);
+                return true;
+            });
+        }
+
+        function guessCompanyChatTargetOrigin() {
+            try {
+                if (typeof window.COMPANYCHAT_TARGET_ORIGIN === 'string' && window.COMPANYCHAT_TARGET_ORIGIN.trim()) {
+                    return window.COMPANYCHAT_TARGET_ORIGIN.trim();
+                }
+            } catch (e) {}
+            try {
+                if (document.referrer) {
+                    const o = new URL(document.referrer).origin;
+                    if (o) return o;
+                }
+            } catch (e) {}
+            try {
+                if (window.location.ancestorOrigins && window.location.ancestorOrigins.length > 0) {
+                    return window.location.ancestorOrigins[0];
+                }
+            } catch (e) {}
+            return '*';
+        }
+
+        function postCompanyChatTrafficPayload(payload) {
+            const wins = getCompanyChatWindowsForPostMessage();
+            if (!wins.length) {
+                console.warn('[companychat 연동] 부모/opener 없음. companychat 교통비 탭의 iframe 안에서 쓰거나「새 탭에서 열기」로 연 뒤 전송하세요.');
+                return false;
+            }
+            const origin = guessCompanyChatTargetOrigin();
+            wins.forEach(function (w) {
+                try {
+                    w.postMessage(payload, origin);
+                } catch (e) {
+                    try {
+                        w.postMessage(payload, '*');
+                    } catch (e2) {
+                        console.warn('[companychat 연동] postMessage 실패:', e2);
+                    }
+                }
+            });
+            console.log('[companychat 연동] postMessage → 창 ' + wins.length + '개, targetOrigin:', origin, payload);
+            return true;
+        }
+
         // EmailJS로 자동 이메일 전송 + Supabase 업로드 + companychat 연동
         // companychat으로 전송 (Supabase Storage 업로드 + postMessage)
         async function sendToCompanyChat() {
@@ -4191,6 +4250,11 @@ async function searchInterviewer(event) {
             
             if (!supervisorId) {
                 alert('⚠️ 슈퍼바이저를 먼저 선택해주세요!');
+                return;
+            }
+
+            if (!selectedInterviewer.id || String(selectedInterviewer.id).trim() === '' || selectedInterviewer.id === 'unknown') {
+                alert('⚠️ 면접원 검색에서 면접원을 선택해 주세요!\n(출발지/도착지에 주소가 들어가야 제출자 ID가 잡힙니다.)');
                 return;
             }
             
@@ -4259,9 +4323,11 @@ async function searchInterviewer(event) {
                 
                 // 3. companychat에 postMessage 전송
                 btn.textContent = '📡 전송 중...';
+                const loginIdStr = String(interviewerId).trim();
                 const postData = {
                     type: 'companychat-traffic-submitted',
-                    loginId: interviewerId,
+                    loginId: loginIdStr,
+                    name: interviewerName,
                     supervisorId: supervisorId,
                     source: 'route-calc',
                     files: {
@@ -4277,11 +4343,7 @@ async function searchInterviewer(event) {
                     }
                 };
                 
-                // iframe 내부인 경우 부모에게 전송
-                if (window.parent !== window) {
-                    window.parent.postMessage(postData, '*');
-                    console.log('companychat에 postMessage 전송:', postData);
-                }
+                postCompanyChatTrafficPayload(postData);
                 
                 alert(`✅ 전송 완료!\n\n${supervisorName}에게 전송되었습니다.\n\n파일이 업로드되었습니다.`);
                 showToast('✅ 전송 완료!', 'success');
