@@ -16,6 +16,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     <!-- SheetJS with Style support for Excel export -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+    <!-- Supabase JS Client for Storage -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Supabase 설정
+        const SUPABASE_URL = 'https://fzuqztunicnptqqnuruv.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6dXF6dHVuaWNucHRxcW51cnV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU0MzUzNDYsImV4cCI6MjA4MTAxMTM0Nn0.xiihKzb6I6t1cTyekLzYr1CGEIHrP6Bxm_nG9Uue6c8';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
     <style>
         :root {
             --bg-gradient-1: #0f0c29;
@@ -4017,7 +4025,176 @@ async function searchInterviewer(event) {
             }
         }
 
-        // EmailJS로 자동 이메일 전송
+        // Base64 → Blob 변환
+        function base64ToBlob(base64, mimeType) {
+            const byteCharacters = atob(base64.split(',')[1] || base64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            return new Blob([byteArray], { type: mimeType });
+        }
+
+        // 엑셀 Blob 생성 (exportToExcel 로직 재사용)
+        function generateExcelBlob() {
+            if (!lastCalculationResult && accumulatedResults.length === 0) {
+                return null;
+            }
+
+            const result = lastCalculationResult || accumulatedResults[0];
+            const today = new Date();
+            const year = today.getFullYear();
+            const monthNum = parseInt((result.date || '').match(/(\d+)월/)?.[1]) || (today.getMonth() + 1);
+            const dayNum = parseInt((result.date || '').match(/(\d+)일/)?.[1]) || today.getDate();
+            
+            const pinkBg = { fgColor: { rgb: "FFCCFF" } };
+            const thinBorder = {
+                top: { style: "thin", color: { rgb: "000000" } },
+                bottom: { style: "thin", color: { rgb: "000000" } },
+                left: { style: "thin", color: { rgb: "000000" } },
+                right: { style: "thin", color: { rgb: "000000" } }
+            };
+            const fontName = "맑은 고딕";
+            const centerAlign = { horizontal: "center", vertical: "center", wrapText: true };
+            const leftAlign = { horizontal: "left", vertical: "center" };
+            const mediumBorder = {
+                top: { style: "medium", color: { rgb: "000000" } },
+                bottom: { style: "medium", color: { rgb: "000000" } },
+                left: { style: "medium", color: { rgb: "000000" } },
+                right: { style: "medium", color: { rgb: "000000" } }
+            };
+            
+            const titleStyle = { font: { name: fontName, bold: true, sz: 16 }, alignment: { horizontal: "center", vertical: "center" }, fill: pinkBg };
+            const headerStyle = { font: { name: fontName, bold: true, sz: 10 }, alignment: centerAlign, fill: pinkBg, border: thinBorder };
+            const dataStyle = { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: thinBorder };
+            const dataStyleNum = { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: thinBorder, numFmt: "#,##0" };
+            const sumRowStyle = { font: { name: fontName, bold: true, sz: 10 }, alignment: centerAlign, fill: pinkBg, border: thinBorder };
+            const sumRowStyleNum = { font: { name: fontName, bold: true, sz: 10 }, alignment: centerAlign, fill: pinkBg, border: thinBorder, numFmt: "#,##0" };
+            const noBorderStyle = { font: { name: fontName, sz: 10 }, alignment: leftAlign };
+
+            const ws = {};
+            
+            ['A1','B1','C1','D1','E1','F1','G1','H1','I1','J1','K1','L1'].forEach(cell => {
+                ws[cell] = { v: '', t: 's', s: noBorderStyle };
+            });
+            
+            ws['A2'] = { v: '면접원 시외 교통비 정산표', t: 's', s: titleStyle };
+            ['B2','C2','D2','E2','F2','G2','H2','I2','J2','K2','L2'].forEach(cell => {
+                ws[cell] = { v: '', t: 's', s: titleStyle };
+            });
+
+            ['A3','B3','C3','D3','E3','F3','G3','H3','I3','J3'].forEach(cell => {
+                ws[cell] = { v: '', t: 's', s: noBorderStyle };
+            });
+            ws['K3'] = { v: '담당SV', t: 's', s: { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: mediumBorder } };
+            ws['L3'] = { v: '', t: 's', s: { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: mediumBorder } };
+
+            ['A4','B4','C4','D4','E4','F4','G4','H4','I4','J4'].forEach(cell => {
+                ws[cell] = { v: '', t: 's', s: noBorderStyle };
+            });
+            ws['K4'] = { v: '면접원', t: 's', s: { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: mediumBorder } };
+            const interviewerName = selectedInterviewer.name || '';
+            ws['L4'] = { v: interviewerName, t: 's', s: { font: { name: fontName, sz: 10 }, alignment: centerAlign, border: mediumBorder } };
+
+            ['연월일','소속','출발지','목적지(경유지포함)','이동거리','연비','유류비','통행료','식비','기타','비고(목적)','합계'].forEach((header, i) => {
+                const col = String.fromCharCode(65 + i);
+                ws[col + '5'] = { v: header, t: 's', s: headerStyle };
+            });
+
+            const dataItems = accumulatedResults.length > 0 ? accumulatedResults : (lastCalculationResult ? [lastCalculationResult] : []);
+            let sumDistance = 0, sumFuelCost = 0, sumToll = 0, sumMeal = 0, sumOther = 0, sumTotal = 0;
+
+            dataItems.forEach((item, idx) => {
+                const row = 6 + idx;
+                const dateMatch = (item.date || '').match(/(\d+)월\s*(\d+)일/);
+                const m = dateMatch ? parseInt(dateMatch[1]) : monthNum;
+                const d = dateMatch ? parseInt(dateMatch[2]) : dayNum;
+                const dateVal = `${year}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                
+                let destStr = '';
+                if (item.routePoints && item.routePoints.length > 1) {
+                    destStr = item.routePoints.slice(1).join(' → ');
+                } else {
+                    destStr = item.end || '';
+                }
+                
+                const distKm = parseFloat(item.distance) || 0;
+                const fuelEff = parseFloat(item.fuelEfficiency) || 10;
+                const fuelCost = parseInt(item.fuelCost) || 0;
+                const toll = parseInt(item.tollFee) || 0;
+                const meal = parseInt(item.mealFee) || 0;
+                const other = parseInt(item.otherFee) || 0;
+                const total = parseInt(item.totalCost) || 0;
+
+                sumDistance += distKm;
+                sumFuelCost += fuelCost;
+                sumToll += toll;
+                sumMeal += meal;
+                sumOther += other;
+                sumTotal += total;
+
+                ws['A'+row] = { v: dateVal, t: 's', s: dataStyle };
+                ws['B'+row] = { v: '', t: 's', s: dataStyle };
+                ws['C'+row] = { v: item.routePoints ? item.routePoints[0] : (item.start || ''), t: 's', s: dataStyle };
+                ws['D'+row] = { v: destStr, t: 's', s: dataStyle };
+                ws['E'+row] = { v: distKm, t: 'n', s: dataStyleNum };
+                ws['F'+row] = { v: fuelEff, t: 'n', s: dataStyleNum };
+                ws['G'+row] = { v: fuelCost, t: 'n', s: dataStyleNum };
+                ws['H'+row] = { v: toll, t: 'n', s: dataStyleNum };
+                ws['I'+row] = { v: meal, t: 'n', s: dataStyleNum };
+                ws['J'+row] = { v: other, t: 'n', s: dataStyleNum };
+                ws['K'+row] = { v: '', t: 's', s: dataStyle };
+                ws['L'+row] = { v: total, t: 'n', s: dataStyleNum };
+            });
+
+            const sumRow = 6 + dataItems.length;
+            ws['A'+sumRow] = { v: '합계', t: 's', s: sumRowStyle };
+            ['B','C','D'].forEach(col => { ws[col+sumRow] = { v: '', t: 's', s: sumRowStyle }; });
+            ws['E'+sumRow] = { v: sumDistance, t: 'n', s: sumRowStyleNum };
+            ws['F'+sumRow] = { v: '', t: 's', s: sumRowStyle };
+            ws['G'+sumRow] = { v: sumFuelCost, t: 'n', s: sumRowStyleNum };
+            ws['H'+sumRow] = { v: sumToll, t: 'n', s: sumRowStyleNum };
+            ws['I'+sumRow] = { v: sumMeal, t: 'n', s: sumRowStyleNum };
+            ws['J'+sumRow] = { v: sumOther, t: 'n', s: sumRowStyleNum };
+            ws['K'+sumRow] = { v: '', t: 's', s: sumRowStyle };
+            ws['L'+sumRow] = { v: sumTotal, t: 'n', s: sumRowStyleNum };
+
+            ws['!ref'] = `A1:L${sumRow}`;
+            ws['!merges'] = [{ s: { r: 1, c: 0 }, e: { r: 1, c: 11 } }];
+            ws['!cols'] = [
+                { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 25 },
+                { wch: 10 }, { wch: 6 }, { wch: 10 }, { wch: 10 },
+                { wch: 8 }, { wch: 8 }, { wch: 15 }, { wch: 12 }
+            ];
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '교통비정산');
+            
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            return new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        }
+
+        // Supabase Storage에 파일 업로드
+        async function uploadToSupabase(blob, fileName, folder) {
+            const filePath = `${folder}/${fileName}`;
+            const { data, error } = await supabaseClient.storage
+                .from('traffic-expenses')
+                .upload(filePath, blob, { upsert: true });
+            
+            if (error) {
+                console.error('Supabase 업로드 오류:', error);
+                throw error;
+            }
+            
+            const { data: urlData } = supabaseClient.storage
+                .from('traffic-expenses')
+                .getPublicUrl(filePath);
+            
+            return urlData.publicUrl;
+        }
+
+        // EmailJS로 자동 이메일 전송 + Supabase 업로드 + companychat 연동
         async function sendEmailWithEmailJS() {
             const supervisorSelect = document.getElementById('supervisor-select');
             const supervisorEmail = supervisorSelect.value;
@@ -4033,15 +4210,17 @@ async function searchInterviewer(event) {
                 return;
             }
             
-            // 버튼 비활성화
             const btn = event.target;
             const originalText = btn.textContent;
             btn.disabled = true;
-            btn.textContent = '📤 전송 중...';
+            btn.textContent = '📤 업로드 중...';
             
-            // 이메일 내용 생성
             const today = new Date();
             const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+            const timestamp = Date.now();
+            const interviewerName = selectedInterviewer.name || '미지정';
+            const interviewerId = selectedInterviewer.id || 'unknown';
+            const folderName = `${interviewerId}_${timestamp}`;
             
             let totalCost = 0;
             let routeList = '';
@@ -4060,24 +4239,85 @@ async function searchInterviewer(event) {
                 totalCost = lastCalculationResult.totalCost;
             }
             
-            // 면접원 이름 가져오기
-            const interviewerName = selectedInterviewer.name || '미지정';
-            
-            const subject = `교통비 정산_${interviewerName}`;
-            const message = 
-                `안녕하세요, ${supervisorName}님.\n\n` +
-                `교통비 정산 내역을 보내드립니다.\n\n` +
-                `👤 면접원: ${interviewerName}\n` +
-                `📅 작성일: ${dateStr}\n` +
-                `💰 총 금액: ${totalCost.toLocaleString()}원\n\n` +
-                `📋 세부 내역:\n${routeList}\n\n` +
-                `감사합니다.`;
-            
             try {
-                // EmailJS로 이메일 전송
+                // 1. 엑셀 파일 업로드
+                btn.textContent = '📊 엑셀 업로드 중...';
+                const excelBlob = generateExcelBlob();
+                let excelUrl = null;
+                if (excelBlob) {
+                    const excelFileName = `교통비정산_${interviewerName}_${timestamp}.xlsx`;
+                    excelUrl = await uploadToSupabase(excelBlob, excelFileName, folderName);
+                    console.log('엑셀 업로드 완료:', excelUrl);
+                }
+                
+                // 2. 영수증 이미지 업로드
+                const imageUrls = {};
+                if (window.receiptImages) {
+                    const imageTypes = Object.keys(window.receiptImages);
+                    for (let i = 0; i < imageTypes.length; i++) {
+                        const type = imageTypes[i];
+                        btn.textContent = `📷 이미지 업로드 중 (${i+1}/${imageTypes.length})...`;
+                        const base64 = window.receiptImages[type];
+                        const mimeMatch = base64.match(/data:([^;]+);/);
+                        const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+                        const ext = mimeType.split('/')[1] || 'jpg';
+                        const imageBlob = base64ToBlob(base64, mimeType);
+                        const imageFileName = `영수증_${type}_${timestamp}.${ext}`;
+                        imageUrls[type] = await uploadToSupabase(imageBlob, imageFileName, folderName);
+                        console.log(`${type} 이미지 업로드 완료:`, imageUrls[type]);
+                    }
+                }
+                
+                // 3. companychat에 postMessage 전송
+                btn.textContent = '📡 연동 중...';
+                const postData = {
+                    type: 'companychat-traffic-submitted',
+                    loginId: interviewerId,
+                    source: 'route-calc',
+                    files: {
+                        excel: excelUrl,
+                        images: imageUrls
+                    },
+                    summary: {
+                        interviewerName: interviewerName,
+                        totalCost: totalCost,
+                        date: dateStr,
+                        routeList: routeList
+                    }
+                };
+                
+                // iframe 내부인 경우 부모에게 전송
+                if (window.parent !== window) {
+                    window.parent.postMessage(postData, '*');
+                    console.log('companychat에 postMessage 전송:', postData);
+                }
+                
+                // 4. EmailJS로 이메일 전송
+                btn.textContent = '📧 이메일 전송 중...';
+                const subject = `교통비 정산_${interviewerName}`;
+                let message = 
+                    `안녕하세요, ${supervisorName}님.\n\n` +
+                    `교통비 정산 내역을 보내드립니다.\n\n` +
+                    `👤 면접원: ${interviewerName}\n` +
+                    `📅 작성일: ${dateStr}\n` +
+                    `💰 총 금액: ${totalCost.toLocaleString()}원\n\n` +
+                    `📋 세부 내역:\n${routeList}\n\n`;
+                
+                if (excelUrl) {
+                    message += `📊 엑셀 파일: ${excelUrl}\n`;
+                }
+                if (Object.keys(imageUrls).length > 0) {
+                    message += `\n📷 영수증 이미지:\n`;
+                    for (const [type, url] of Object.entries(imageUrls)) {
+                        const typeLabel = type === 'toll' ? '통행료' : type === 'meal' ? '식비' : '기타';
+                        message += `- ${typeLabel}: ${url}\n`;
+                    }
+                }
+                message += `\n감사합니다.`;
+                
                 const response = await emailjs.send(
-                    'service_loo2irc',  // Service ID (Gmail)
-                    'template_uomzc1h', // Template ID
+                    'service_loo2irc',
+                    'template_uomzc1h',
                     {
                         to_email: supervisorEmail,
                         subject: subject,
@@ -4088,14 +4328,13 @@ async function searchInterviewer(event) {
                 );
                 
                 console.log('EmailJS 성공:', response);
-                alert(`✅ 이메일 전송 완료!\n\n${supervisorName}(${supervisorEmail})에게 전송되었습니다.`);
-                showToast('✅ 이메일이 성공적으로 전송되었습니다!', 'success');
+                alert(`✅ 전송 완료!\n\n${supervisorName}(${supervisorEmail})에게 전송되었습니다.\n\n파일이 Supabase에 업로드되었습니다.`);
+                showToast('✅ 전송 완료! 파일과 이메일이 전송되었습니다.', 'success');
                 
             } catch (error) {
-                console.error('EmailJS 오류:', error);
-                alert(`❌ 이메일 전송 실패\n\n오류: ${error.text || error.message || '알 수 없는 오류'}\n\n네이버/Gmail 버튼을 사용해주세요.`);
+                console.error('전송 오류:', error);
+                alert(`❌ 전송 실패\n\n오류: ${error.message || '알 수 없는 오류'}`);
             } finally {
-                // 버튼 복구
                 btn.disabled = false;
                 btn.textContent = originalText;
             }
