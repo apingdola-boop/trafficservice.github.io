@@ -4044,24 +4044,20 @@ async function searchInterviewer(event) {
                 window.location.href = emailUrl;
                 
             } else if (emailService === 'naver') {
-                // 네이버 메일 - 클립보드에 정보 복사 후 이동
-                const mailInfo = `받는 사람: ${supervisorEmail}\n제목: ${subject}\n\n${bodyText}`;
+                // 네이버 메일 - /write?to= 파라미터 사용
+                // 네이버 메일은 to 파라미터만 지원, subject/body는 클립보드로
+                const mailContent = `제목: ${subject}\n\n${bodyText}`;
                 
-                // 클립보드에 복사 시도
+                // 클립보드에 제목+본문 복사
                 if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(mailInfo).then(() => {
-                        alert('📋 이메일 내용이 클립보드에 복사되었습니다!\n\n네이버 메일에서 Ctrl+V로 붙여넣기 하세요.');
-                        window.location.href = 'https://mail.naver.com/v2/new';
-                    }).catch(() => {
-                        // 클립보드 실패 시 직접 이동
-                        alert('네이버 메일로 이동합니다.\n\n받는 사람: ' + supervisorEmail);
-                        window.location.href = 'https://mail.naver.com/v2/new';
-                    });
-                } else {
-                    // 클립보드 API 미지원 시
-                    alert('네이버 메일로 이동합니다.\n\n받는 사람: ' + supervisorEmail);
-                    window.location.href = 'https://mail.naver.com/v2/new';
+                    navigator.clipboard.writeText(mailContent).then(() => {
+                        alert('📋 이메일 제목과 본문이 클립보드에 복사되었습니다!\n\n네이버 메일에서 제목/내용에 Ctrl+V로 붙여넣기 하세요.');
+                    }).catch(() => {});
                 }
+                
+                // 네이버 메일 작성 페이지로 이동 (받는사람 자동 입력)
+                emailUrl = `https://mail.naver.com/write?to=${encodeURIComponent(supervisorEmail)}`;
+                window.location.href = emailUrl;
             }
         }
 
