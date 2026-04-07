@@ -3974,8 +3974,8 @@ async function searchInterviewer(event) {
 
             // 파일명 생성
             const projectNumForFile = result.projectNumber || '프로젝트';
-            const interviewerNameForFile = result.interviewerName || '면접원';
-            const fileName = `${projectNumForFile}_${interviewerNameForFile}_${monthNum}월.xlsx`;
+            const interviewerIdForFile = result.interviewerId || '면접원ID';
+            const fileName = `${projectNumForFile}_${interviewerIdForFile}_${monthNum}월.xlsx`;
             
             if (opts && opts.returnBlob) {
                 const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
@@ -4199,7 +4199,8 @@ async function searchInterviewer(event) {
                 const excelBlob = generateExcelBlob();
                 let excelUrl = null;
                 if (excelBlob) {
-                    const excelFileName = `traffic_${interviewerId}_${timestamp}.xlsx`;
+                    const monthNumForFile = parseInt((dateStr || '').match(/(\\d+)월/)?.[1]) || (today.getMonth() + 1);
+                    const excelFileName = `${loginIdStr}_${monthNumForFile}월_${timestamp}.xlsx`;
                     excelUrl = await uploadToSupabase(excelBlob, excelFileName, folderName);
                     console.log('엑셀 업로드 완료:', excelUrl);
                 }
