@@ -3992,7 +3992,7 @@ async function searchInterviewer(event) {
                 return;
             }
             
-            if (accumulatedItems.length === 0 && !lastCalculationResult) {
+            if (accumulatedResults.length === 0 && !lastCalculationResult) {
                 alert('⚠️ 먼저 경로를 계산하거나 추가해주세요!');
                 return;
             }
@@ -4004,14 +4004,18 @@ async function searchInterviewer(event) {
             let totalCost = 0;
             let routeList = '';
             
-            if (accumulatedItems.length > 0) {
-                accumulatedItems.forEach((item, idx) => {
-                    routeList += `${idx + 1}. ${item.date} | ${item.start} → ${item.end} | ${item.total.toLocaleString()}원\n`;
-                    totalCost += item.total;
+            if (accumulatedResults.length > 0) {
+                accumulatedResults.forEach((item, idx) => {
+                    const startPoint = item.routePoints ? item.routePoints[0] : item.start;
+                    const endPoint = item.routePoints ? item.routePoints[item.routePoints.length - 1] : item.end;
+                    routeList += `${idx + 1}. ${item.date} | ${startPoint} → ${endPoint} | ${item.totalCost.toLocaleString()}원\n`;
+                    totalCost += item.totalCost;
                 });
             } else if (lastCalculationResult) {
-                routeList = `${lastCalculationResult.date} | ${lastCalculationResult.start} → ${lastCalculationResult.end} | ${lastCalculationResult.total.toLocaleString()}원`;
-                totalCost = lastCalculationResult.total;
+                const startPoint = lastCalculationResult.routePoints ? lastCalculationResult.routePoints[0] : lastCalculationResult.start;
+                const endPoint = lastCalculationResult.routePoints ? lastCalculationResult.routePoints[lastCalculationResult.routePoints.length - 1] : lastCalculationResult.end;
+                routeList = `${lastCalculationResult.date} | ${startPoint} → ${endPoint} | ${lastCalculationResult.totalCost.toLocaleString()}원`;
+                totalCost = lastCalculationResult.totalCost;
             }
             
             // 영수증 첨부 여부 확인
