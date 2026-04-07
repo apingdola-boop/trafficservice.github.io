@@ -4039,8 +4039,20 @@ async function searchInterviewer(event) {
         }
 
         // Supabase Storage에 파일 업로드
+        function sanitizeStoragePathSegment(seg) {
+            const s = String(seg == null ? '' : seg);
+            // Storage key는 경로로 처리되므로, 슬래시/역슬래시/제어문자(개행 포함)를 제거해 안전한 segment로 만듭니다.
+            return s
+                .replace(/[\u0000-\u001f\u007f]/g, '') // control chars (incl \n \r \t)
+                .replace(/[\\/]/g, '_')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .replace(/\.\.+/g, '.');
+        }
         async function uploadToSupabase(blob, fileName, folder) {
-            const filePath = `${folder}/${fileName}`;
+            const safeFolder = sanitizeStoragePathSegment(folder || 'uploads');
+            const safeName = sanitizeStoragePathSegment(fileName || 'file');
+            const filePath = `${safeFolder}/${safeName}`;
             const { data, error } = await supabaseClient.storage
                 .from('traffic-expenses')
                 .upload(filePath, blob, { upsert: true });
@@ -4173,8 +4185,8 @@ async function searchInterviewer(event) {
             const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
             const timestamp = Date.now();
             const interviewerName = selectedInterviewer.name || '미지정';
-            const interviewerId = selectedInterviewer.id || 'unknown';
-            const loginIdStr = String(interviewerId).trim();
+            const interviewerId = String(selectedInterviewer.id || 'unknown').trim();
+            const loginIdStr = interviewerId;
             const folderName = `${interviewerId}_${timestamp}`;
             
             let totalCost = 0;
