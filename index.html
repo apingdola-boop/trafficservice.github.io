@@ -4104,14 +4104,24 @@ async function searchInterviewer(event) {
                 const d = dateMatch ? parseInt(dateMatch[2]) : dayNum;
                 const dateVal = `${year}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                 
+                // 계산 결과 저장 필드가 버전별로 달라 출발/도착/경유지를 유연하게 구성
+                const startAddr = item.start || item.startAddress || '';
+                const endAddr = item.end || item.endAddress || '';
+                const wayAddr = Array.isArray(item.waypointAddresses)
+                    ? item.waypointAddresses.filter(x => String(x || '').trim())
+                    : (Array.isArray(item.waypoints) ? item.waypoints : []);
+                const points = Array.isArray(item.routePoints) && item.routePoints.length
+                    ? item.routePoints
+                    : [startAddr, ...wayAddr, endAddr].filter(x => String(x || '').trim());
+
                 let destStr = '';
-                if (item.routePoints && item.routePoints.length > 1) {
-                    destStr = item.routePoints.slice(1).join(' → ');
+                if (points.length > 1) {
+                    destStr = points.slice(1).join(' → ');
                 } else {
-                    destStr = item.end || '';
+                    destStr = endAddr || '';
                 }
                 
-                const distKm = parseFloat(item.distance) || 0;
+                const distKm = parseFloat(item.distanceKm ?? item.distance) || 0;
                 const fuelEff = parseFloat(item.fuelEfficiency) || 10;
                 const fuelCost = parseInt(item.fuelCost) || 0;
                 const toll = parseInt(item.tollFee) || 0;
@@ -4128,7 +4138,7 @@ async function searchInterviewer(event) {
 
                 ws['A'+row] = { v: dateVal, t: 's', s: dataStyle };
                 ws['B'+row] = { v: '', t: 's', s: dataStyle };
-                ws['C'+row] = { v: item.routePoints ? item.routePoints[0] : (item.start || ''), t: 's', s: dataStyle };
+                ws['C'+row] = { v: points[0] || startAddr || '', t: 's', s: dataStyle };
                 ws['D'+row] = { v: destStr, t: 's', s: dataStyle };
                 ws['E'+row] = { v: distKm, t: 'n', s: dataStyleNum };
                 ws['F'+row] = { v: fuelEff, t: 'n', s: dataStyleNum };
