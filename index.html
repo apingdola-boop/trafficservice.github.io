@@ -4041,13 +4041,15 @@ async function searchInterviewer(event) {
         // Supabase Storage에 파일 업로드
         function sanitizeStoragePathSegment(seg) {
             const s = String(seg == null ? '' : seg);
-            // Storage key는 경로로 처리되므로, 슬래시/역슬래시/제어문자(개행 포함)를 제거해 안전한 segment로 만듭니다.
-            return s
+            // Supabase Storage key는 환경에 따라 비-ASCII(한글 등)에서 Invalid key가 날 수 있어
+            // 업로드용 key는 영문/숫자/._- 만 남기고 나머지는 '_'로 치환합니다.
+            const cleaned = s
                 .replace(/[\u0000-\u001f\u007f]/g, '') // control chars (incl \n \r \t)
                 .replace(/[\\/]/g, '_')
                 .replace(/\s+/g, ' ')
                 .trim()
                 .replace(/\.\.+/g, '.');
+            return cleaned.replace(/[^A-Za-z0-9._-]/g, '_');
         }
         async function uploadToSupabase(blob, fileName, folder) {
             const safeFolder = sanitizeStoragePathSegment(folder || 'uploads');
@@ -4213,7 +4215,8 @@ async function searchInterviewer(event) {
                 let excelUrl = null;
                 if (excelBlob) {
                     const monthNumForFile = parseInt((dateStr || '').match(/(\\d+)월/)?.[1]) || (today.getMonth() + 1);
-                    const excelFileName = `${loginIdStr}_${monthNumForFile}월_${timestamp}.xlsx`;
+                    // 업로드 key는 영문/숫자 위주로 (한글/특수문자 포함 시 Invalid key 방지)
+                    const excelFileName = `${loginIdStr}_${monthNumForFile}m_${timestamp}.xlsx`;
                     excelUrl = await uploadToSupabase(excelBlob, excelFileName, folderName);
                     console.log('엑셀 업로드 완료:', excelUrl);
                 }
