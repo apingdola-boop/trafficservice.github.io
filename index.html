@@ -3988,12 +3988,12 @@ async function searchInterviewer(event) {
             const supervisorName = supervisorSelect.options[supervisorSelect.selectedIndex].text;
             
             if (!supervisorEmail) {
-                showToast('⚠️ 슈퍼바이저를 먼저 선택해주세요!', 'error');
+                alert('⚠️ 슈퍼바이저를 먼저 선택해주세요!');
                 return;
             }
             
             if (accumulatedItems.length === 0 && !lastCalculationResult) {
-                showToast('⚠️ 먼저 경로를 계산하거나 추가해주세요!', 'error');
+                alert('⚠️ 먼저 경로를 계산하거나 추가해주세요!');
                 return;
             }
             
@@ -4033,31 +4033,32 @@ async function searchInterviewer(event) {
             let emailUrl;
             
             if (emailService === 'gmail') {
-                // Gmail 웹 compose URL
+                // Gmail 웹 compose URL - 직접 페이지 이동
                 emailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(supervisorEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+                
+                // 직접 페이지 이동 (팝업 차단 방지)
+                window.location.href = emailUrl;
+                
             } else if (emailService === 'naver') {
-                // 네이버 메일 - 새 메일 작성 페이지로 이동 후 안내
-                // 네이버는 URL 파라미터로 받는 사람/제목/본문을 직접 지원하지 않음
-                // 대신 클립보드에 정보 복사 후 메일 작성 페이지 열기
+                // 네이버 메일 - 클립보드에 정보 복사 후 이동
                 const mailInfo = `받는 사람: ${supervisorEmail}\n제목: ${subject}\n\n${bodyText}`;
                 
-                // 클립보드에 복사
-                navigator.clipboard.writeText(mailInfo).then(() => {
-                    showToast('📋 이메일 내용이 클립보드에 복사되었습니다! 네이버 메일에 붙여넣기 하세요.', 'success');
-                }).catch(() => {
-                    // 클립보드 복사 실패 시
-                    prompt('아래 내용을 복사하세요:', mailInfo);
-                });
-                
-                // 네이버 메일 작성 페이지 열기
-                window.open('https://mail.naver.com/v2/new', '_blank');
-                return;
+                // 클립보드에 복사 시도
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(mailInfo).then(() => {
+                        alert('📋 이메일 내용이 클립보드에 복사되었습니다!\n\n네이버 메일에서 Ctrl+V로 붙여넣기 하세요.');
+                        window.location.href = 'https://mail.naver.com/v2/new';
+                    }).catch(() => {
+                        // 클립보드 실패 시 직접 이동
+                        alert('네이버 메일로 이동합니다.\n\n받는 사람: ' + supervisorEmail);
+                        window.location.href = 'https://mail.naver.com/v2/new';
+                    });
+                } else {
+                    // 클립보드 API 미지원 시
+                    alert('네이버 메일로 이동합니다.\n\n받는 사람: ' + supervisorEmail);
+                    window.location.href = 'https://mail.naver.com/v2/new';
+                }
             }
-            
-            // 새 창에서 이메일 열기
-            window.open(emailUrl, '_blank');
-            
-            showToast(`📧 Gmail에서 ${supervisorName}에게 보내기 창이 열렸습니다!`, 'success');
         }
 
         // 페이지 로드시 오늘 날짜 기본값 설정
