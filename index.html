@@ -4157,6 +4157,18 @@ async function searchInterviewer(event) {
             return true;
         }
 
+        /** 전송 직전 화면(입력칸) 기준 프로젝트 — lastCalculationResult는 계산 시점 스냅샷이라 프로젝트만 바꾼 뒤 재계산 안 하면 옛번호로 나갈 수 있음 */
+        function getDomProjectNumberNormalized() {
+            const projectNum1 = document.getElementById('project_num1').value.trim();
+            const projectNum2 = document.getElementById('project_num2').value.trim();
+            const projectNum3 = document.getElementById('project_num3').value.trim();
+            if (!projectNum1 && !projectNum2 && !projectNum3) return '';
+            return `${projectNum1 || '0000'}-${projectNum2 || '00'}-${projectNum3 || '0000'}`;
+        }
+        function getDomProjectName() {
+            return document.getElementById('project_name').value.trim();
+        }
+
         // EmailJS로 자동 이메일 전송 + Supabase 업로드 + companychat 연동
         // companychat으로 전송 (Supabase Storage 업로드 + postMessage)
         async function sendToCompanyChat(ev) {
@@ -4178,8 +4190,9 @@ async function searchInterviewer(event) {
                 return;
             }
 
-            // 프로젝트 번호가 없으면 companychat에서 프로젝트를 특정할 수 없어 여러 방에 중복 기록될 수 있음
-            const pn = lastCalculationResult ? String(lastCalculationResult.projectNumber || '').trim() : '';
+            // 프로젝트 번호: 반드시 "지금 화면에 입력된 값"(calculate()와 동일 규칙). 스냅샷(lastCalculationResult)만 믿지 않음.
+            const pn = getDomProjectNumberNormalized();
+            const domProjectName = getDomProjectName();
             if (!pn) {
                 alert('⚠️ 프로젝트 번호를 먼저 입력/선택해 주세요!\n(프로젝트 검색으로 입력하거나 프로젝트 번호 3칸을 채운 뒤 계산/전송하세요.)');
                 return;
@@ -4188,6 +4201,26 @@ async function searchInterviewer(event) {
             if (accumulatedResults.length === 0 && !lastCalculationResult) {
                 alert('⚠️ 먼저 경로를 계산하거나 추가해주세요!');
                 return;
+            }
+
+            // 누적/마지막 결과 객체의 프로젝트 필드를 전송 기준으로 맞춤 (엑셀·postMessage 일치)
+            if (lastCalculationResult) {
+                lastCalculationResult.projectNumber = pn;
+                lastCalculationResult.projectName = domProjectName;
+            }
+            if (accumulatedResults.length > 0) {
+                let hadMismatch = false;
+                accumulatedResults.forEach((item) => {
+                    const prev = item.projectNumber ? String(item.projectNumber).trim() : '';
+                    if (prev && prev !== pn) hadMismatch = true;
+                    item.projectNumber = pn;
+                    item.projectName = domProjectName;
+                });
+                if (hadMismatch) {
+                    try {
+                        showToast('누적 목록의 프로젝트 번호를 현재 입력값(' + pn + ')으로 통일했습니다.', 'start');
+                    } catch (_) {}
+                }
             }
             
             sendToCompanyChat._busy = true;
@@ -4259,7 +4292,7 @@ async function searchInterviewer(event) {
                     loginId: loginIdStr,
                     name: interviewerName,
                     projectNumber: pn,
-                    projectName: lastCalculationResult ? (lastCalculationResult.projectName || '') : '',
+                    projectName: domProjectName || (lastCalculationResult ? (lastCalculationResult.projectName || '') : ''),
                     supervisorId: supervisorId,
                     source: 'route-calc',
                     files: {
