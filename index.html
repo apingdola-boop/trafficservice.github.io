@@ -3830,8 +3830,23 @@ async function searchInterviewer(event) {
             return b.distKm;
         }
 
+        function diameterFromBoundingBoxKm(bbox) {
+            // bbox (Nominatim jsonv2): [south, north, west, east] (strings)
+            if (!Array.isArray(bbox) || bbox.length < 4) return 0;
+            const south = Number(bbox[0]);
+            const north = Number(bbox[1]);
+            const west = Number(bbox[2]);
+            const east = Number(bbox[3]);
+            if (![south, north, west, east].every(Number.isFinite)) return 0;
+
+            const sw = { lat: south, lon: west };
+            const ne = { lat: north, lon: east };
+            return haversineKm(sw, ne);
+        }
+
         async function fetchDongBoundaryGeoJson(query) {
-            const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&polygon_geojson=1&addressdetails=1&limit=5&q=${encodeURIComponent(query)}`;
+            const q = `${query} 대한민국`;
+            const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&polygon_geojson=1&addressdetails=1&limit=8&q=${encodeURIComponent(q)}`;
             const res = await fetch(url, {
                 headers: {
                     // Nominatim 권장: User-Agent/Referer 등. 브라우저에서는 제한이 있어 최소한의 식별만 둠.
@@ -3846,20 +3861,38 @@ async function searchInterviewer(event) {
                 throw new Error('동 경계를 찾을 수 없습니다. (검색 결과 없음)');
             }
 
-            const boundaryLike = data.find(d => d?.geojson && (d.class === 'boundary' || d.type === 'administrative'));
-            const best = boundaryLike || data.find(d => d?.geojson) || null;
-            if (!best || !best.geojson) {
-                throw new Error('동 경계를 찾을 수 없습니다. (폴리곤 없음)');
-            }
+            // 폴리곤/멀티폴리곤 우선
+            const polygonFirst =
+                data.find(d => d?.geojson && (d.geojson.type === 'Polygon' || d.geojson.type === 'MultiPolygon')) ||
+                data.find(d => d?.geojson && (d.class === 'boundary' || d.type === 'administrative') && (d.geojson.type === 'Polygon' || d.geojson.type === 'MultiPolygon')) ||
+                null;
 
-            return { displayName: best.display_name, geojson: best.geojson };
+            const best = polygonFirst || data.find(d => d?.geojson) || data[0] || null;
+            if (!best) throw new Error('동 경계를 찾을 수 없습니다. (검색 결과 없음)');
+
+            return {
+                displayName: best.display_name,
+                geojson: best.geojson || null,
+                boundingbox: best.boundingbox || null
+            };
         }
 
         async function getDongDiameterKm(dongQuery) {
-            const { geojson } = await fetchDongBoundaryGeoJson(dongQuery);
-            const pts = downsamplePoints(flattenGeoJsonToPoints(geojson), 400);
-            if (pts.length < 2) throw new Error('동 경계가 너무 단순해서 끝-끝 거리를 계산할 수 없습니다.');
-            return approxDiameterKm(pts);
+            const { geojson, boundingbox } = await fetchDongBoundaryGeoJson(dongQuery);
+
+            if (geojson) {
+                const pts = downsamplePoints(flattenGeoJsonToPoints(geojson), 400);
+                if (pts.length >= 2) {
+                    const d = approxDiameterKm(pts);
+                    if (d > 0) return d;
+                }
+            }
+
+            // fallback: 폴리곤이 없거나 너무 단순하면 boundingbox 대각선 사용
+            const bboxD = diameterFromBoundingBoxKm(boundingbox);
+            if (bboxD > 0) return bboxD;
+
+            throw new Error('동 경계를 가져왔지만 끝-끝(직선) 거리를 계산할 수 없습니다.');
         }
 
         // 지역(동 지름) + 부수 기반 자동 보정 모델
