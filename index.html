@@ -1945,7 +1945,6 @@
             </button>
         </div>
 
-        <div class="tab-panel active" id="tab-manual" role="tabpanel" aria-labelledby="tab-btn-manual">
         <div class="card">
             <h2 class="card-title"><span class="icon">📍</span> 경로 설정</h2>
             <div class="input-group">
@@ -2194,8 +2193,6 @@
                 </div>
             </div>
         </div>
-        </div>
-
         <div class="tab-panel" id="tab-auto" role="tabpanel" aria-labelledby="tab-btn-auto">
             <div class="card">
                 <h2 class="card-title"><span class="icon">🗺️</span> 읍면동 자동 계산</h2>
@@ -3880,7 +3877,6 @@ async function searchInterviewer(event) {
         function setActiveTopTab(tab) {
             const manualBtn = document.getElementById('tab-btn-manual');
             const autoBtn = document.getElementById('tab-btn-auto');
-            const manualPanel = document.getElementById('tab-manual');
             const autoPanel = document.getElementById('tab-auto');
 
             const isManual = tab === 'manual';
@@ -3890,7 +3886,6 @@ async function searchInterviewer(event) {
             manualBtn.setAttribute('aria-selected', String(isManual));
             autoBtn.setAttribute('aria-selected', String(!isManual));
 
-            manualPanel.classList.toggle('active', isManual);
             autoPanel.classList.toggle('active', !isManual);
         }
 
