@@ -1757,6 +1757,48 @@
             gap: 12px;
         }
 
+        /* 자동탭(읍면동) 전용 레이아웃 */
+        .auto-waypoint-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .auto-waypoint-actions .btn-add-waypoint,
+        .auto-waypoint-actions .btn-clear-auto {
+            writing-mode: horizontal-tb;
+            text-orientation: mixed;
+            white-space: nowrap;
+            height: 48px;
+        }
+
+        .btn-clear-auto {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            border: 1px dashed rgba(220, 53, 69, 0.55);
+            background: linear-gradient(135deg, rgba(220, 53, 69, 0.25) 0%, rgba(200, 35, 51, 0.25) 100%);
+            color: #ffd6db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-clear-auto:hover {
+            background: linear-gradient(135deg, rgba(220, 53, 69, 0.32) 0%, rgba(200, 35, 51, 0.32) 100%);
+        }
+
+        @media (max-width: 720px) {
+            .auto-waypoint-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+
         @media (max-width: 720px) {
             .mini-grid {
                 grid-template-columns: 1fr;
@@ -2169,12 +2211,11 @@
                 </div>
 
                 <div style="margin-top: 10px;">
-                    <div style="display:flex; gap:10px; align-items:center; margin-bottom: 10px;">
-                        <span style="color: var(--text-secondary); font-size: 0.9rem; white-space: nowrap;">경유(동)</span>
-                        <button class="btn-add-waypoint" type="button" onclick="addAutoWaypoint()" style="flex: 1;">
+                    <div class="auto-waypoint-actions">
+                        <button class="btn-add-waypoint" type="button" onclick="addAutoWaypoint()">
                             <span>➕</span> 경유지(동) 추가
                         </button>
-                        <button class="btn-add-waypoint" type="button" onclick="clearAllAutoWaypoints()" style="background: linear-gradient(135deg, rgba(220, 53, 69, 0.3) 0%, rgba(200, 35, 51, 0.3) 100%); border: 1px dashed rgba(220, 53, 69, 0.5);">
+                        <button class="btn-clear-auto" type="button" onclick="clearAllAutoWaypoints()">
                             <span>🗑️</span> 전체 삭제
                         </button>
                     </div>
@@ -2204,6 +2245,60 @@
                 <div class="hint-box">
                     - <b>출발→도착</b>은 카카오 길찾기(도로거리)로 계산합니다.<br>
                     - <b>도착 동 내부</b>는 “동 경계의 끝-끝(직선)”을 구해, <b>(끝-끝 × 계수 × 부수)</b>로 평균 순회거리를 잡습니다.
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title-with-date">
+                    <h2 class="card-title" style="margin-bottom: 0;"><span class="icon">📅</span> 날짜/메타/프로젝트</h2>
+                </div>
+
+                <div class="date-input-row" style="margin-top: 14px;">
+                    <div class="date-block">
+                        <div class="date-input-wrapper">
+                            <input type="text" id="auto_trip_month" value="" placeholder="월" maxlength="2">
+                            <span class="date-sep">월</span>
+                            <input type="text" id="auto_trip_day" value="" placeholder="일" maxlength="2">
+                            <span class="date-sep">일</span>
+                        </div>
+                    </div>
+                    <div class="meta-field">
+                        <label class="meta-label" for="auto_trip_count">진행 부수(표기용)</label>
+                        <div class="date-input-wrapper">
+                            <input type="text" id="auto_trip_count" value="" placeholder="부수" maxlength="4">
+                            <span class="date-sep">부</span>
+                        </div>
+                    </div>
+                    <div class="meta-field">
+                        <label class="meta-label" for="auto_transport_method">교통수단</label>
+                        <input type="text" id="auto_transport_method" value="" placeholder="예: 자차" maxlength="20">
+                    </div>
+                    <div class="meta-field">
+                        <label class="meta-label" for="auto_trip_purpose">용무</label>
+                        <input type="text" id="auto_trip_purpose" value="" placeholder="예: 회의" maxlength="30">
+                    </div>
+                </div>
+
+                <div class="project-info-row" style="margin-top: 20px;">
+                    <div class="project-item">
+                        <label>📋 프로젝트 번호</label>
+                        <div class="project-number-wrapper">
+                            <input type="text" id="auto_project_num1" maxlength="4" placeholder="0000">
+                            <span class="project-sep">-</span>
+                            <input type="text" id="auto_project_num2" maxlength="2" placeholder="00">
+                            <span class="project-sep">-</span>
+                            <input type="text" id="auto_project_num3" maxlength="4" placeholder="0000">
+                        </div>
+                    </div>
+                    <div class="project-item project-name-item">
+                        <label>📝 프로젝트 명</label>
+                        <input type="text" id="auto_project_name" class="project-name-input" placeholder="프로젝트 명 입력">
+                    </div>
+                </div>
+
+                <div class="hint-box" style="margin-top: 14px;">
+                    - <b>면접원</b>은 왼쪽 <b>면접원 검색</b>에서 선택하면 자동으로 적용됩니다.<br>
+                    - 탭2 엑셀 출력은 위 입력값(날짜/프로젝트/메타)을 사용합니다.
                 </div>
             </div>
 
@@ -4101,19 +4196,19 @@ async function searchInterviewer(event) {
 
                 // 엑셀/누적 내보내기용 결과 저장: 기존 포맷에 맞춰 lastCalculationResult 세팅
                 const today = new Date();
-                const tripMonth = parseInt(document.getElementById('trip_month')?.value) || (today.getMonth() + 1);
-                const tripDay = parseInt(document.getElementById('trip_day')?.value) || today.getDate();
+                const tripMonth = parseInt((document.getElementById('auto_trip_month')?.value || document.getElementById('trip_month')?.value)) || (today.getMonth() + 1);
+                const tripDay = parseInt((document.getElementById('auto_trip_day')?.value || document.getElementById('trip_day')?.value)) || today.getDate();
                 const tripDateText = `${tripMonth}월 ${tripDay}일`;
-                const tripCount = (document.getElementById('trip_count')?.value || '').trim();
-                const transportMethod = (document.getElementById('transport_method')?.value || '').trim();
-                const tripPurpose = (document.getElementById('trip_purpose')?.value || '').trim();
-                const projectNum1 = (document.getElementById('project_num1')?.value || '').trim();
-                const projectNum2 = (document.getElementById('project_num2')?.value || '').trim();
-                const projectNum3 = (document.getElementById('project_num3')?.value || '').trim();
+                const tripCount = (document.getElementById('auto_trip_count')?.value || document.getElementById('trip_count')?.value || '').trim();
+                const transportMethod = (document.getElementById('auto_transport_method')?.value || document.getElementById('transport_method')?.value || '').trim();
+                const tripPurpose = (document.getElementById('auto_trip_purpose')?.value || document.getElementById('trip_purpose')?.value || '').trim();
+                const projectNum1 = (document.getElementById('auto_project_num1')?.value || document.getElementById('project_num1')?.value || '').trim();
+                const projectNum2 = (document.getElementById('auto_project_num2')?.value || document.getElementById('project_num2')?.value || '').trim();
+                const projectNum3 = (document.getElementById('auto_project_num3')?.value || document.getElementById('project_num3')?.value || '').trim();
                 const projectNumber = (projectNum1 || projectNum2 || projectNum3)
                     ? `${projectNum1 || '0000'}-${projectNum2 || '00'}-${projectNum3 || '0000'}`
                     : '';
-                const projectName = (document.getElementById('project_name')?.value || '').trim();
+                const projectName = (document.getElementById('auto_project_name')?.value || document.getElementById('project_name')?.value || '').trim();
 
                 // duration은 현재 탭2에서 별도 합산하지 않으므로 0/빈값 처리 (엑셀은 주로 거리/비용 사용)
                 lastCalculationResult = {
@@ -5087,6 +5182,8 @@ async function searchInterviewer(event) {
             const today = new Date();
             document.getElementById('trip_month').value = today.getMonth() + 1;
             document.getElementById('trip_day').value = today.getDate();
+            if (document.getElementById('auto_trip_month')) document.getElementById('auto_trip_month').value = today.getMonth() + 1;
+            if (document.getElementById('auto_trip_day')) document.getElementById('auto_trip_day').value = today.getDate();
             loadBaseLists();
             onAutoTuneToggle();
         });
