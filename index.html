@@ -1696,6 +1696,72 @@
             background: var(--accent-magenta);
             color: #fff;
         }
+
+        /* 상단 탭 */
+        .top-tabs {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0 18px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            backdrop-filter: blur(10px);
+        }
+
+        .top-tab-btn {
+            flex: 1;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-primary);
+            padding: 12px 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .top-tab-btn:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+
+        .top-tab-btn.active {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.25), rgba(255, 0, 212, 0.22));
+            border-color: rgba(0, 212, 255, 0.35);
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        .hint-box {
+            margin-top: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px dashed rgba(255, 255, 255, 0.14);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .mini-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        @media (max-width: 720px) {
+            .mini-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
     
     <!-- EmailJS SDK -->
@@ -1828,6 +1894,16 @@
             <p class="subtitle">카카오 API 기반 실제 경로 거리 & 유류비 계산기</p>
         </header>
 
+        <div class="top-tabs" role="tablist" aria-label="유류비 계산 방식 선택">
+            <button class="top-tab-btn active" id="tab-btn-manual" type="button" role="tab" aria-selected="true" aria-controls="tab-manual" onclick="setActiveTopTab('manual')">
+                🧭 수동 검색(도로 기반)
+            </button>
+            <button class="top-tab-btn" id="tab-btn-auto" type="button" role="tab" aria-selected="false" aria-controls="tab-auto" onclick="setActiveTopTab('auto')">
+                🗺️ 읍면동 자동(동 내부 직선 평균)
+            </button>
+        </div>
+
+        <div class="tab-panel active" id="tab-manual" role="tabpanel" aria-labelledby="tab-btn-manual">
         <div class="card">
             <h2 class="card-title"><span class="icon">📍</span> 경로 설정</h2>
             <div class="input-group">
@@ -2073,6 +2149,156 @@
 
                 <div class="info-note">
                     ✅ 실제 도로 경로 기반의 정확한 거리입니다!
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <div class="tab-panel" id="tab-auto" role="tabpanel" aria-labelledby="tab-btn-auto">
+            <div class="card">
+                <h2 class="card-title"><span class="icon">🗺️</span> 읍면동 자동 계산</h2>
+                <div class="mini-grid">
+                    <div class="input-group">
+                        <label for="auto_start">출발(읍/면/동)</label>
+                        <input type="text" id="auto_start" placeholder="예: 부산 연제구 연산동">
+                    </div>
+                    <div class="input-group">
+                        <label for="auto_end">도착(읍/면/동)</label>
+                        <input type="text" id="auto_end" placeholder="예: 창원 진해구 여좌동">
+                    </div>
+                </div>
+
+                <div class="mini-grid" style="margin-top: 6px;">
+                    <div class="input-group">
+                        <label for="auto_bu">진행 부수</label>
+                        <input type="number" id="auto_bu" value="10" min="0" step="1">
+                    </div>
+                    <div class="input-group">
+                        <label for="auto_roam_factor">동 내부 평균 계수</label>
+                        <input type="number" id="auto_roam_factor" value="0.5" min="0" max="2" step="0.1">
+                        <div style="margin-top:8px; display:flex; align-items:center; gap:8px; color: var(--text-secondary); font-size:0.9rem;">
+                            <input type="checkbox" id="auto_roam_autotune" checked onchange="onAutoTuneToggle()">
+                            <label for="auto_roam_autotune" style="cursor:pointer;">자동 보정</label>
+                            <span id="auto_roam_autotune_hint" style="opacity:0.85;">(지역/부수 기반)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hint-box">
+                    - <b>출발→도착</b>은 카카오 길찾기(도로거리)로 계산합니다.<br>
+                    - <b>도착 동 내부</b>는 “동 경계의 끝-끝(직선)”을 구해, <b>(끝-끝 × 계수 × 부수)</b>로 평균 순회거리를 잡습니다.
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title"><span class="icon">💸</span> 비용 설정</h2>
+                <div class="cost-settings-grid-4" style="margin-top: 8px;">
+                    <div class="cost-item-large">
+                        <label for="auto_cost_per_km">⛽ km당 유류비</label>
+                        <div class="cost-input-wrapper-large">
+                            <input type="number" id="auto_cost_per_km" value="180" min="50" max="500" step="10">
+                            <span class="unit">원/km</span>
+                        </div>
+                    </div>
+                    <div class="cost-item-large">
+                        <label for="auto_toll_fee">🛣️ 통행료</label>
+                        <div class="cost-input-wrapper-large">
+                            <input type="number" id="auto_toll_fee" value="0" min="0" step="100">
+                            <span class="unit">원</span>
+                        </div>
+                    </div>
+                    <div class="cost-item-large">
+                        <label for="auto_meal_fee">🍽️ 식비</label>
+                        <div class="cost-input-wrapper-large">
+                            <input type="number" id="auto_meal_fee" value="0" min="0" step="1000">
+                            <span class="unit">원</span>
+                        </div>
+                    </div>
+                    <div class="cost-item-large">
+                        <div class="custom-label-wrapper">
+                            <span>📦</span>
+                            <input type="text" id="auto_other_label" class="custom-label-input" placeholder="기타" value="">
+                        </div>
+                        <div class="cost-input-wrapper-large">
+                            <input type="number" id="auto_other_fee" value="0" min="0" step="100">
+                            <span class="unit">원</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="error-message" id="auto-error" style="display:none;">
+                <span>⚠️</span>
+                <span id="auto-error-text"></span>
+            </div>
+
+            <button class="btn btn-primary" id="calculate-auto-btn" onclick="calculateAutoDong()">
+                <span class="spinner"></span>
+                <span class="btn-text">읍면동 자동 계산하기</span>
+            </button>
+
+            <div class="results" id="auto-results" style="display:none;">
+                <div class="card">
+                    <div class="result-header">
+                        <div class="route-flow" id="auto-route-flow"></div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">🛣️</div>
+                            <div class="stat-value" id="auto-road-km">-</div>
+                            <div class="stat-label">출발→도착(도로)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📏</div>
+                            <div class="stat-value" id="auto-dong-diameter">-</div>
+                            <div class="stat-label">도착 동 끝-끝(직선)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🔁</div>
+                            <div class="stat-value" id="auto-roam-km">-</div>
+                            <div class="stat-label">동 내부 평균 순회</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">⚙️</div>
+                            <div class="stat-value" id="auto-roam-model">-</div>
+                            <div class="stat-label">자동 보정(요약)</div>
+                        </div>
+                        <div class="stat-card highlight">
+                            <div class="stat-icon">🧾</div>
+                            <div class="stat-value" id="auto-total-km">-</div>
+                            <div class="stat-label">총 거리</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">⛽</div>
+                            <div class="stat-value" id="auto-fuel">-</div>
+                            <div class="stat-label">유류비</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🛣️</div>
+                            <div class="stat-value" id="auto-toll">-</div>
+                            <div class="stat-label">통행료</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🍽️</div>
+                            <div class="stat-value" id="auto-meal">-</div>
+                            <div class="stat-label">식비</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📦</div>
+                            <div class="stat-value" id="auto-other">-</div>
+                            <div class="stat-label" id="auto-other-label-out">기타</div>
+                        </div>
+                        <div class="stat-card highlight">
+                            <div class="stat-icon">💰</div>
+                            <div class="stat-value" id="auto-total-cost">-</div>
+                            <div class="stat-label">총 비용</div>
+                        </div>
+                    </div>
+
+                    <div class="info-note">
+                        ✅ 출발→도착은 도로거리, 동 내부는 직선 평균(끝-끝 기반)으로 빠르게 계산합니다.
+                    </div>
                 </div>
             </div>
         </div>
@@ -3491,6 +3717,275 @@ async function searchInterviewer(event) {
             errorEl.classList.add('show');
         }
 
+        function setActiveTopTab(tab) {
+            const manualBtn = document.getElementById('tab-btn-manual');
+            const autoBtn = document.getElementById('tab-btn-auto');
+            const manualPanel = document.getElementById('tab-manual');
+            const autoPanel = document.getElementById('tab-auto');
+
+            const isManual = tab === 'manual';
+
+            manualBtn.classList.toggle('active', isManual);
+            autoBtn.classList.toggle('active', !isManual);
+            manualBtn.setAttribute('aria-selected', String(isManual));
+            autoBtn.setAttribute('aria-selected', String(!isManual));
+
+            manualPanel.classList.toggle('active', isManual);
+            autoPanel.classList.toggle('active', !isManual);
+        }
+
+        function showAutoError(message) {
+            const wrap = document.getElementById('auto-error');
+            const text = document.getElementById('auto-error-text');
+            text.textContent = message;
+            wrap.style.display = 'flex';
+        }
+
+        function hideAutoError() {
+            const wrap = document.getElementById('auto-error');
+            wrap.style.display = 'none';
+        }
+
+        function onAutoTuneToggle() {
+            const enabled = document.getElementById('auto_roam_autotune').checked;
+            const factorInput = document.getElementById('auto_roam_factor');
+            factorInput.disabled = enabled;
+            factorInput.style.opacity = enabled ? '0.55' : '1';
+        }
+
+        function haversineKm(a, b) {
+            const R = 6371;
+            const toRad = (d) => (d * Math.PI) / 180;
+            const dLat = toRad(b.lat - a.lat);
+            const dLon = toRad(b.lon - a.lon);
+            const lat1 = toRad(a.lat);
+            const lat2 = toRad(b.lat);
+
+            const s1 = Math.sin(dLat / 2);
+            const s2 = Math.sin(dLon / 2);
+            const h = s1 * s1 + Math.cos(lat1) * Math.cos(lat2) * s2 * s2;
+            return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+        }
+
+        function flattenGeoJsonToPoints(geojson) {
+            const pts = [];
+            if (!geojson || !geojson.type) return pts;
+
+            const pushRing = (ring) => {
+                if (!Array.isArray(ring)) return;
+                for (const c of ring) {
+                    if (!Array.isArray(c) || c.length < 2) continue;
+                    const lon = Number(c[0]);
+                    const lat = Number(c[1]);
+                    if (Number.isFinite(lat) && Number.isFinite(lon)) pts.push({ lat, lon });
+                }
+            };
+
+            if (geojson.type === 'Polygon') {
+                // coordinates: [ [ [lon,lat], ... ] , ... ]
+                const outer = geojson.coordinates?.[0];
+                pushRing(outer);
+            } else if (geojson.type === 'MultiPolygon') {
+                // coordinates: [ Polygon, Polygon, ... ] where Polygon = [ring, ...]
+                for (const poly of geojson.coordinates || []) {
+                    const outer = poly?.[0];
+                    pushRing(outer);
+                }
+            } else if (geojson.type === 'LineString') {
+                pushRing(geojson.coordinates);
+            } else if (geojson.type === 'MultiLineString') {
+                for (const ring of geojson.coordinates || []) pushRing(ring);
+            }
+
+            return pts;
+        }
+
+        function downsamplePoints(points, maxPoints = 400) {
+            if (points.length <= maxPoints) return points;
+            const step = Math.ceil(points.length / maxPoints);
+            const out = [];
+            for (let i = 0; i < points.length; i += step) out.push(points[i]);
+            return out;
+        }
+
+        function approxDiameterKm(points) {
+            if (!points || points.length < 2) return 0;
+
+            const farthestFrom = (p) => {
+                let best = points[0];
+                let bestD = -1;
+                for (const q of points) {
+                    const d = haversineKm(p, q);
+                    if (d > bestD) {
+                        bestD = d;
+                        best = q;
+                    }
+                }
+                return { point: best, distKm: bestD };
+            };
+
+            const p0 = points[0];
+            const a = farthestFrom(p0).point;
+            const b = farthestFrom(a);
+            return b.distKm;
+        }
+
+        async function fetchDongBoundaryGeoJson(query) {
+            const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&polygon_geojson=1&addressdetails=1&limit=5&q=${encodeURIComponent(query)}`;
+            const res = await fetch(url, {
+                headers: {
+                    // Nominatim 권장: User-Agent/Referer 등. 브라우저에서는 제한이 있어 최소한의 식별만 둠.
+                    'Accept': 'application/json'
+                }
+            });
+            if (!res.ok) {
+                throw new Error(`동 경계 조회 실패 (HTTP ${res.status})`);
+            }
+            const data = await res.json();
+            if (!Array.isArray(data) || data.length === 0) {
+                throw new Error('동 경계를 찾을 수 없습니다. (검색 결과 없음)');
+            }
+
+            const boundaryLike = data.find(d => d?.geojson && (d.class === 'boundary' || d.type === 'administrative'));
+            const best = boundaryLike || data.find(d => d?.geojson) || null;
+            if (!best || !best.geojson) {
+                throw new Error('동 경계를 찾을 수 없습니다. (폴리곤 없음)');
+            }
+
+            return { displayName: best.display_name, geojson: best.geojson };
+        }
+
+        async function getDongDiameterKm(dongQuery) {
+            const { geojson } = await fetchDongBoundaryGeoJson(dongQuery);
+            const pts = downsamplePoints(flattenGeoJsonToPoints(geojson), 400);
+            if (pts.length < 2) throw new Error('동 경계가 너무 단순해서 끝-끝 거리를 계산할 수 없습니다.');
+            return approxDiameterKm(pts);
+        }
+
+        // 지역(동 지름) + 부수 기반 자동 보정 모델
+        // - perBuKm: 1부당 평균 순회거리(km)
+        // - roamKm: 총 순회거리(km) (부수 증가 시 완만하게 증가하도록 지수 < 1)
+        function autoTuneRoam(dongDiameterKm, bu) {
+            const d = Math.max(0, Number(dongDiameterKm) || 0);
+            const n = Math.max(0, Number(bu) || 0);
+
+            // 1부당 평균: 동이 클수록 증가 (최소/최대 캡으로 과소·과대 방지)
+            // 예: 지름 2km -> 0.8~1.2km 수준, 지름 8km -> 2.5~3.5km 수준
+            const perBuRaw = d * 0.38;
+            const perBuMin = 0.8;
+            const perBuMax = Math.max(1.6, d * 0.75); // 동이 크면 최대도 같이 커지게
+            const perBuKm = Math.min(perBuMax, Math.max(perBuMin, perBuRaw));
+
+            // 부수 증가 보정: n^0.85 (선형보다 완만)
+            const exponent = 0.85;
+            const roamKm = perBuKm * Math.pow(n, exponent);
+
+            // 화면 표기를 위한 "등가 계수" (선형 모델의 factor에 해당)
+            // roamKm = d * factor * n  -> factor = roamKm / (d*n)
+            const eqFactor = (d > 0 && n > 0) ? (roamKm / (d * n)) : 0;
+
+            return { perBuKm, roamKm, eqFactor, exponent };
+        }
+
+        async function calculateAutoDong() {
+            const btn = document.getElementById('calculate-auto-btn');
+            const resultsWrap = document.getElementById('auto-results');
+
+            const startInput = document.getElementById('auto_start').value.trim();
+            const endInput = document.getElementById('auto_end').value.trim();
+            const bu = Number(document.getElementById('auto_bu').value || 0);
+            const autoTuneEnabled = document.getElementById('auto_roam_autotune')?.checked ?? true;
+            const manualRoamFactor = Number(document.getElementById('auto_roam_factor').value || 0);
+
+            const costPerKm = Number(document.getElementById('auto_cost_per_km').value || 180);
+            const tollFee = Number(document.getElementById('auto_toll_fee').value || 0);
+            const mealFee = Number(document.getElementById('auto_meal_fee').value || 0);
+            const otherFee = Number(document.getElementById('auto_other_fee').value || 0);
+            const otherLabel = (document.getElementById('auto_other_label').value.trim() || '기타');
+
+            if (!startInput || !endInput) {
+                showAutoError('출발(읍면동)과 도착(읍면동)을 모두 입력해주세요.');
+                return;
+            }
+            if (!Number.isFinite(bu) || bu < 0) {
+                showAutoError('진행 부수는 0 이상 숫자여야 합니다.');
+                return;
+            }
+            if (!autoTuneEnabled && (!Number.isFinite(manualRoamFactor) || manualRoamFactor < 0)) {
+                showAutoError('동 내부 평균 계수는 0 이상 숫자여야 합니다.');
+                return;
+            }
+
+            hideAutoError();
+            resultsWrap.style.display = 'none';
+            btn.classList.add('loading');
+            btn.disabled = true;
+
+            try {
+                // 1) 출발/도착 좌표 (읍면동 텍스트를 카카오 로컬검색으로 좌표화)
+                const [origin, destination] = await Promise.all([
+                    searchAddress(startInput),
+                    searchAddress(endInput)
+                ]);
+
+                // 2) 도로거리(출발→도착): 기존 로직 그대로 사용 (구간별 호출)
+                const segmentDistances = await getSegmentDistances([origin, destination]);
+                const roadKm = segmentDistances.reduce((sum, seg) => sum + Math.round(seg.distance), 0);
+
+                // 3) 도착 동 내부 직선 기반 끝-끝 거리(=지름)
+                const dongDiameterKm = await getDongDiameterKm(endInput);
+
+                // 4) 평균 순회 거리
+                let roamKm = 0;
+                let roamModelText = '';
+                if (autoTuneEnabled) {
+                    const tuned = autoTuneRoam(dongDiameterKm, bu);
+                    roamKm = tuned.roamKm;
+                    roamModelText = `자동: 1부≈${tuned.perBuKm.toFixed(2)}km, n^${tuned.exponent}`;
+                } else {
+                    roamKm = dongDiameterKm * manualRoamFactor * bu;
+                    roamModelText = `수동: 계수=${manualRoamFactor}`;
+                }
+                const totalKm = roadKm + roamKm;
+
+                const fuelCost = totalKm * costPerKm;
+                const totalCost = fuelCost + tollFee + mealFee + otherFee;
+
+                // UI 렌더
+                const flow = document.getElementById('auto-route-flow');
+                flow.innerHTML = `
+                    <span class="route-point start">${origin.name}</span>
+                    <span class="route-arrow">→</span>
+                    <span class="route-point end">${destination.name}</span>
+                    <span class="route-arrow">+</span>
+                    <span class="route-point waypoint">${destination.name} (동 내부)</span>
+                `;
+
+                document.getElementById('auto-road-km').textContent = `${Math.round(roadKm)} km`;
+                document.getElementById('auto-dong-diameter').textContent = `${dongDiameterKm.toFixed(2)} km`;
+                document.getElementById('auto-roam-km').textContent = `${roamKm.toFixed(2)} km`;
+                document.getElementById('auto-roam-model').textContent = roamModelText;
+                document.getElementById('auto-total-km').textContent = `${totalKm.toFixed(2)} km`;
+
+                document.getElementById('auto-fuel').textContent = Math.round(fuelCost).toLocaleString() + ' 원';
+                document.getElementById('auto-toll').textContent = tollFee.toLocaleString() + ' 원';
+                document.getElementById('auto-meal').textContent = mealFee.toLocaleString() + ' 원';
+                document.getElementById('auto-other').textContent = otherFee.toLocaleString() + ' 원';
+                document.getElementById('auto-other-label-out').textContent = otherLabel;
+                document.getElementById('auto-total-cost').textContent = Math.round(totalCost).toLocaleString() + ' 원';
+
+                resultsWrap.style.display = 'block';
+                resultsWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            } catch (e) {
+                console.error(e);
+                showAutoError(e?.message || '자동 계산 중 오류가 발생했습니다.');
+            } finally {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
+        }
+
         // 누적 목록에 추가
         function addToAccumulated() {
             if (!lastCalculationResult) {
@@ -4425,6 +4920,7 @@ async function searchInterviewer(event) {
             document.getElementById('trip_month').value = today.getMonth() + 1;
             document.getElementById('trip_day').value = today.getDate();
             loadBaseLists();
+            onAutoTuneToggle();
         });
     </script>
 </body>
