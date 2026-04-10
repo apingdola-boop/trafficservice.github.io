@@ -2022,7 +2022,7 @@
         <div class="sidebar-header">
             <h2>👤 면접원 검색</h2>
             <div class="sidebar-search">
-                <input type="text" id="interviewer-search" placeholder="ID 또는 이름 검색" onkeyup="searchInterviewer(event)">
+                <input type="text" id="interviewer-search" placeholder="ID 또는 이름 검색" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" onkeyup="searchInterviewer(event)">
                 <button onclick="searchInterviewer()">검색</button>
             </div>
             <div class="chosung-filter" id="interviewer-chosung">
@@ -2081,7 +2081,7 @@
         <div class="sidebar-header">
             <h2>📋 프로젝트 검색</h2>
             <div class="sidebar-search">
-                <input type="text" id="project-search" placeholder="번호 또는 이름 검색" onkeyup="searchProject(event)">
+                <input type="text" id="project-search" placeholder="번호 또는 이름 검색" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" onkeyup="searchProject(event)">
                 <button onclick="searchProject()">검색</button>
             </div>
             <div class="chosung-filter" id="project-chosung">
@@ -2892,6 +2892,13 @@ const CUSTOM_INTERVIEWERS_KEY = 'customInterviewers';
             container.classList.toggle('shifted', intOpen || projOpen);
         }
 
+        function dismissMobileKeyboard() {
+            const active = document.activeElement;
+            if (active && typeof active.blur === 'function') {
+                active.blur();
+            }
+        }
+
         // 사이드바 토글 (면접원)
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -2906,6 +2913,7 @@ const CUSTOM_INTERVIEWERS_KEY = 'customInterviewers';
             }
             sidebar.classList.toggle('open');
             toggle.classList.toggle('active');
+            dismissMobileKeyboard();
             syncSidebarTabsStrip();
             syncMainContainerShift();
         }
@@ -2924,6 +2932,7 @@ const CUSTOM_INTERVIEWERS_KEY = 'customInterviewers';
             }
             sidebarRight.classList.toggle('open');
             toggleRight.classList.toggle('active');
+            dismissMobileKeyboard();
             syncSidebarTabsStrip();
             syncMainContainerShift();
         }
@@ -3282,8 +3291,8 @@ async function searchInterviewer(event) {
             // 토스트 알림 표시
             showToast(`✅ ${name}님의 주소가 ${typeName} ${modeLabel}에 입력되었습니다!`, type);
             
-            // 모바일에서 사이드바 닫기
-            if (window.innerWidth <= 800) {
+            // 모바일: 출발지는 계속 선택할 수 있게 유지, 도착지 선택 시 자동 닫기
+            if (window.innerWidth <= 800 && type === 'end') {
                 toggleSidebar();
             }
             
