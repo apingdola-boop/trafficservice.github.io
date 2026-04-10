@@ -1945,31 +1945,8 @@
             </button>
         </div>
 
-        <div class="card">
-            <h2 class="card-title"><span class="icon">📍</span> 경로 설정</h2>
-            <div class="input-group">
-                <label for="start">출발지 <span style="color: var(--accent-cyan); font-size: 0.8rem;">(👤 면접원 검색으로 자동 입력 가능)</span></label>
-                <input type="text" id="start" placeholder="예: 서울시청, 강남역, 부산 해운대구">
-            </div>
-
-            <div class="waypoint-container" id="waypoint-container"></div>
-            
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <button class="btn-add-waypoint" onclick="addWaypoint()">
-                    <span>➕</span> 경유지 추가
-                </button>
-                <button class="btn-add-waypoint" onclick="clearAllWaypoints()" style="background: linear-gradient(135deg, rgba(220, 53, 69, 0.3) 0%, rgba(200, 35, 51, 0.3) 100%); border: 1px dashed rgba(220, 53, 69, 0.5);">
-                    <span>🗑️</span> 전체 삭제
-                </button>
-            </div>
-
-            <div class="input-group" style="margin-top: 20px;">
-                <label for="end">도착지 <span style="color: var(--accent-magenta); font-size: 0.8rem;">(👤 면접원 검색으로 자동 입력 가능)</span></label>
-                <input type="text" id="end" placeholder="예: 인천공항, 대전역, 제주시">
-            </div>
-        </div>
-
-        <div class="card">
+        <!-- 공통: 날짜·프로젝트·비용 (두 탭에서 동일 입력) -->
+        <div class="card" id="shared-trip-meta">
             <!-- 카드 제목 + 날짜 입력 -->
             <div class="card-title-with-date">
                 <h2 class="card-title" style="margin-bottom: 0;"><span class="icon">📅</span> 날짜</h2>
@@ -2091,6 +2068,36 @@
             </div>
         </div>
 
+        <div class="tab-panel active" id="tab-manual" role="tabpanel" aria-labelledby="tab-btn-manual">
+        <div class="card">
+            <h2 class="card-title"><span class="icon">📍</span> 경로 설정 <span style="color: var(--text-secondary); font-size: 0.75rem; font-weight: 500;">(수동 검색 전용)</span></h2>
+            <div class="input-group">
+                <label for="start">출발지 <span style="color: var(--accent-cyan); font-size: 0.8rem;">(👤 면접원 검색으로 자동 입력 가능)</span></label>
+                <input type="text" id="start" placeholder="예: 서울시청, 강남역, 부산 해운대구">
+            </div>
+
+            <div class="input-group" style="margin-top: 14px;">
+                <label for="waypoint-prefix">반복 단어 <span style="color: var(--text-secondary); font-size: 0.8rem;">(경유지 라벨 앞에 붙음, 비우면 생략)</span></label>
+                <input type="text" id="waypoint-prefix" placeholder="예: CU, 방문" maxlength="40" autocomplete="off">
+            </div>
+
+            <div class="waypoint-container" id="waypoint-container"></div>
+
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <button class="btn-add-waypoint" onclick="addWaypoint()">
+                    <span>➕</span> 경유지 추가
+                </button>
+                <button class="btn-add-waypoint" onclick="clearAllWaypoints()" style="background: linear-gradient(135deg, rgba(220, 53, 69, 0.3) 0%, rgba(200, 35, 51, 0.3) 100%); border: 1px dashed rgba(220, 53, 69, 0.5);">
+                    <span>🗑️</span> 전체 삭제
+                </button>
+            </div>
+
+            <div class="input-group" style="margin-top: 20px;">
+                <label for="end">도착지 <span style="color: var(--accent-magenta); font-size: 0.8rem;">(👤 면접원 검색으로 자동 입력 가능)</span></label>
+                <input type="text" id="end" placeholder="예: 인천공항, 대전역, 제주시">
+            </div>
+        </div>
+
         <div class="error-message" id="error">
             <span>⚠️</span>
             <span id="error-text"></span>
@@ -2189,11 +2196,13 @@
                 </div>
             </div>
         </div>
+        </div>
+
         <div class="tab-panel" id="tab-auto" role="tabpanel" aria-labelledby="tab-btn-auto">
             <div class="card">
                 <h2 class="card-title"><span class="icon">🗺️</span> 읍면동 자동 계산</h2>
                 <p style="font-size:0.88rem; color: var(--text-secondary); margin-bottom: 14px; line-height:1.5;">
-                    <b>날짜·진행 부수·프로젝트·km당 유류비·통행료(추가)·식비·기타</b>는 위쪽 카드와 <b>같은 입력</b>을 씁니다. 이 탭에서는 <b>읍/면/동 단위 경로</b>와 <b>동 내부 순회</b>만 따로 넣습니다.
+                    <b>날짜·진행 부수·프로젝트·km당 유류비·통행료(추가)·식비·기타</b>는 위 <b>공통 카드</b>와 같습니다. 이 탭에서는 <b>읍/면/동 경로</b>와 <b>동 내부 순회</b>만 입력합니다.
                 </p>
 
                 <div class="mini-grid">
@@ -2222,19 +2231,16 @@
                     <label for="auto_return_home" style="cursor:pointer;">도착 후 집(출발지)으로 돌아오기</label>
                 </div>
 
-                <div class="mini-grid" style="margin-top: 12px;">
-                    <div class="input-group">
-                        <label for="auto_bu">도착 동 진행 부수</label>
-                        <input type="number" id="auto_bu" value="10" min="0" step="1">
-                    </div>
-                    <div class="input-group">
-                        <label for="auto_roam_factor">동 내부 평균 계수</label>
-                        <input type="number" id="auto_roam_factor" value="0.5" min="0" max="2" step="0.1">
-                        <div style="margin-top:8px; display:flex; align-items:center; gap:8px; color: var(--text-secondary); font-size:0.9rem;">
-                            <input type="checkbox" id="auto_roam_autotune" checked onchange="onAutoTuneToggle()">
-                            <label for="auto_roam_autotune" style="cursor:pointer;">자동 보정</label>
-                            <span style="opacity:0.85;">(지역/부수 기반)</span>
-                        </div>
+                <div class="input-group" style="margin-top: 12px;">
+                    <label for="auto_bu">도착 동 진행 부수</label>
+                    <input type="number" id="auto_bu" value="10" min="0" step="1">
+                </div>
+                <div class="input-group" style="margin-top: 10px;">
+                    <label for="auto_roam_factor">동 내부 평균 계수 <span style="font-weight:400; color: var(--text-secondary); font-size:0.85rem;">(순회 거리에 곱함)</span></label>
+                    <input type="number" id="auto_roam_factor" value="0.5" min="0" max="2" step="0.1">
+                    <div style="margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; color: var(--text-secondary); font-size:0.9rem;">
+                        <input type="checkbox" id="auto_roam_autotune" checked onchange="onAutoTuneToggle()">
+                        <label for="auto_roam_autotune" style="cursor:pointer;">자동 보정 (지역·부수 기반으로 계수 대신 사용)</label>
                     </div>
                 </div>
 
@@ -3035,18 +3041,21 @@ async function searchInterviewer(event) {
         function addWaypoint() {
             waypointCount++;
             const container = document.getElementById('waypoint-container');
+            const prefix = (document.getElementById('waypoint-prefix')?.value || '').trim();
+            const labelCore = prefix ? `${prefix} 경유지 ${waypointCount}` : `경유지 ${waypointCount}`;
             const div = document.createElement('div');
             div.className = 'waypoint-item';
             div.id = `waypoint-${waypointCount}`;
             div.innerHTML = `
                 <div class="waypoint-input-wrapper">
-                    <input type="text" placeholder="경유지 ${waypointCount}" class="waypoint-input" autocomplete="off">
+                    <input type="text" class="waypoint-input" autocomplete="off">
                     <div class="waypoint-suggestions"></div>
                 </div>
                 <button class="btn-remove-waypoint" onclick="removeWaypoint(${waypointCount})">✕</button>
             `;
             container.appendChild(div);
             const input = div.querySelector('.waypoint-input');
+            input.placeholder = labelCore;
             attachWaypointAutocomplete(input);
         }
 
@@ -3793,6 +3802,7 @@ async function searchInterviewer(event) {
         function setActiveTopTab(tab) {
             const manualBtn = document.getElementById('tab-btn-manual');
             const autoBtn = document.getElementById('tab-btn-auto');
+            const manualPanel = document.getElementById('tab-manual');
             const autoPanel = document.getElementById('tab-auto');
 
             const isManual = tab === 'manual';
@@ -3802,6 +3812,7 @@ async function searchInterviewer(event) {
             manualBtn.setAttribute('aria-selected', String(isManual));
             autoBtn.setAttribute('aria-selected', String(!isManual));
 
+            manualPanel.classList.toggle('active', isManual);
             autoPanel.classList.toggle('active', !isManual);
         }
 
