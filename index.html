@@ -2036,7 +2036,7 @@
                 <div id="auto-waypoint-container"></div>
                 <div class="input-group" style="margin-top: 12px;">
                     <label for="auto_roam_factor">동 내부 평균 계수 <span style="font-weight:400; color: var(--text-secondary); font-size:0.85rem;">(순회 거리에 곱함)</span></label>
-                    <input type="number" id="auto_roam_factor" value="0.5" min="0" max="2" step="0.1">
+                    <input type="number" id="auto_roam_factor" value="0.6" min="0" max="2" step="0.1">
                     <div style="margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; color: var(--text-secondary); font-size:0.9rem;">
                         <input type="checkbox" id="auto_roam_autotune" checked onchange="onAutoTuneToggle()">
                         <label for="auto_roam_autotune" style="cursor:pointer;">자동 보정 (지역·부수 기반으로 계수 대신 사용)</label>
@@ -2052,7 +2052,7 @@
                 <div class="hint-box" style="margin-top: 12px;">
                     - 도로 거리는 <b>출발 → 경유(순서대로) → 도착</b> 구간을 이어 합니다. (마지막 경유지→도착지 포함)<br>
                     - <b>경유 동</b> 옆 <b>부</b>만큼 동 내부 순회를 더합니다. (0이면 해당 경유는 순회 제외)<br>
-                    - OpenStreetMap에서 동 경계를 못 찾으면 <b>지름 약 2.2km 추정</b>으로 부수를 반영합니다.<br>
+                    - OpenStreetMap에서 동 경계를 못 찾으면 <b>지름 약 2.4km 추정</b>으로 부수를 반영합니다.<br>
                     - 동 경계는 OpenStreetMap 검색을 쓰므로 <b>시·구·동</b>을 함께 적는 것이 잘 맞습니다.
                 </div>
             </div>
@@ -4094,7 +4094,7 @@ async function searchInterviewer(event) {
         }
 
         /** 동 경계 검색 실패 시에도 경유 부수가 거리에 반영되도록 쓰는 추정 지름(km) */
-        const FALLBACK_DONG_DIAMETER_KM = 2.2;
+        const FALLBACK_DONG_DIAMETER_KM = 2.4;
 
         // 지역(동 지름) + 부수 기반 자동 보정 모델
         // - perBuKm: 1부당 평균 순회거리(km)
@@ -4104,14 +4104,14 @@ async function searchInterviewer(event) {
             const n = Math.max(0, Number(bu) || 0);
 
             // 1부당 평균: 동이 클수록 증가 (최소/최대 캡으로 과소·과대 방지)
-            // 예: 지름 2km -> 0.8~1.2km 수준, 지름 8km -> 2.5~3.5km 수준
-            const perBuRaw = d * 0.38;
-            const perBuMin = 0.8;
-            const perBuMax = Math.max(1.6, d * 0.75); // 동이 크면 최대도 같이 커지게
+            // 예: 지름 2km -> 약 0.9~1.3km/부, 지름 8km -> 약 2.8~3.8km/부 수준
+            const perBuRaw = d * 0.43;
+            const perBuMin = 0.9;
+            const perBuMax = Math.max(1.75, d * 0.82); // 동이 크면 최대도 같이 커지게
             const perBuKm = Math.min(perBuMax, Math.max(perBuMin, perBuRaw));
 
-            // 부수 증가 보정: n^0.85 (선형보다 완만)
-            const exponent = 0.85;
+            // 부수 증가 보정: n^0.87 (선형보다 완만)
+            const exponent = 0.87;
             const roamKm = perBuKm * Math.pow(n, exponent);
 
             // 화면 표기를 위한 "등가 계수" (선형 모델의 factor에 해당)
