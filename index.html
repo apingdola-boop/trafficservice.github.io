@@ -464,50 +464,6 @@
             .container.shifted {
                 margin-left: auto;
             }
-
-            /* 모바일: 왼쪽 세로 탭 대신 하단 중앙 컴팩트 바 (본문 가리지 않음) */
-            .sidebar-tabs-strip {
-                left: 50% !important;
-                top: auto;
-                bottom: max(12px, env(safe-area-inset-bottom, 12px));
-                transform: translateX(-50%);
-                flex-direction: row;
-                flex-wrap: wrap;
-                justify-content: center;
-                align-items: center;
-                gap: 8px;
-                max-width: min(calc(100vw - 16px), 360px);
-                padding: 0 8px;
-                pointer-events: none;
-            }
-            .sidebar-tabs-strip > * {
-                pointer-events: auto;
-            }
-            .sidebar-tabs-strip.panel-open {
-                left: 50% !important;
-                transform: translateX(-50%);
-                bottom: max(12px, env(safe-area-inset-bottom, 12px));
-            }
-            .sidebar-toggle,
-            .sidebar-right-toggle {
-                writing-mode: horizontal-tb;
-                text-orientation: mixed;
-                font-size: 0.75rem;
-                font-weight: 600;
-                padding: 10px 14px;
-                min-height: 44px;
-                border-radius: 999px;
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-                -webkit-tap-highlight-color: transparent;
-            }
-            .sidebar-toggle:hover,
-            .sidebar-right-toggle:hover {
-                padding-left: 14px;
-                padding-right: 14px;
-            }
-            .container {
-                padding-bottom: max(88px, calc(72px + env(safe-area-inset-bottom, 0px)));
-            }
         }
 
         header {
@@ -1360,6 +1316,49 @@
             }
             .sidebar-right.open {
                 left: 0;
+            }
+
+            /* Mobile tab bar: must follow .sidebar-right-toggle so horizontal-tb wins over vertical-rl */
+            .sidebar-tabs-strip {
+                left: 50% !important;
+                top: auto;
+                bottom: max(12px, env(safe-area-inset-bottom, 12px));
+                transform: translateX(-50%);
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+                align-items: center;
+                gap: 8px;
+                max-width: min(calc(100vw - 16px), 360px);
+                padding: 0 8px;
+                pointer-events: none;
+            }
+            .sidebar-tabs-strip > * {
+                pointer-events: auto;
+            }
+            .sidebar-tabs-strip.panel-open {
+                left: 50% !important;
+                transform: translateX(-50%);
+                bottom: max(12px, env(safe-area-inset-bottom, 12px));
+            }
+            .sidebar-toggle,
+            .sidebar-right-toggle {
+                writing-mode: horizontal-tb;
+                text-orientation: mixed;
+                font-size: 0.75rem;
+                font-weight: 600;
+                padding: 10px 14px;
+                min-height: 44px;
+                border-radius: 999px;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+                -webkit-tap-highlight-color: transparent;
+            }
+            .sidebar-toggle:hover,
+            .sidebar-right-toggle:hover {
+                padding: 10px 14px;
+            }
+            .container {
+                padding-bottom: max(88px, calc(72px + env(safe-area-inset-bottom, 0px)));
             }
         }
 
