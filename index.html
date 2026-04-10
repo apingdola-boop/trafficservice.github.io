@@ -92,13 +92,26 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* 사이드바 토글 버튼 */
-        .sidebar-toggle {
+        /* 왼쪽 고정: 면접원·프로젝트 탭 묶음 */
+        .sidebar-tabs-strip {
             position: fixed;
             left: 0;
             top: 50%;
             transform: translateY(-50%);
-            z-index: 1001;
+            z-index: 1003;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-start;
+            transition: left 0.3s ease;
+        }
+
+        .sidebar-tabs-strip.panel-open {
+            left: 360px;
+        }
+
+        /* 사이드바 토글 버튼 */
+        .sidebar-toggle {
             background: linear-gradient(135deg, var(--accent-cyan), var(--accent-magenta));
             border: none;
             border-radius: 0 12px 12px 0;
@@ -113,10 +126,6 @@
 
         .sidebar-toggle:hover {
             padding-left: 15px;
-        }
-
-        .sidebar-toggle.active {
-            left: 360px;
         }
 
         /* 사이드바 */
@@ -452,8 +461,8 @@
             .sidebar.open {
                 left: 0;
             }
-            .sidebar-toggle.active {
-                left: calc(100% - 45px);
+            .sidebar-tabs-strip.panel-open {
+                left: calc(100% - 52px);
             }
             .container.shifted {
                 margin-left: auto;
@@ -1153,16 +1162,11 @@
 
         footer a { color: var(--accent-cyan); text-decoration: none; }
 
-        /* 오른쪽 사이드바 (프로젝트 검색) */
+        /* 프로젝트 검색 탭·패널 (왼쪽, 면접원 탭 아래) */
         .sidebar-right-toggle {
-            position: fixed;
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            z-index: 1001;
             background: linear-gradient(135deg, var(--accent-yellow), #ff8c00);
             border: none;
-            border-radius: 12px 0 0 12px;
+            border-radius: 0 12px 12px 0;
             padding: 15px 10px;
             cursor: pointer;
             color: #000;
@@ -1173,30 +1177,26 @@
         }
 
         .sidebar-right-toggle:hover {
-            padding-right: 15px;
-        }
-
-        .sidebar-right-toggle.active {
-            right: 360px;
+            padding-left: 15px;
         }
 
         .sidebar-right {
             position: fixed;
-            right: -370px;
+            left: -370px;
             top: 0;
             width: 360px;
             height: 100vh;
             background: rgba(15, 12, 41, 0.98);
-            border-left: 1px solid var(--card-border);
+            border-right: 1px solid var(--card-border);
             z-index: 1000;
-            transition: right 0.3s ease;
+            transition: left 0.3s ease;
             display: flex;
             flex-direction: column;
             backdrop-filter: blur(20px);
         }
 
         .sidebar-right.open {
-            right: 0;
+            left: 0;
         }
 
         .sidebar-right .sidebar-header {
@@ -1315,13 +1315,10 @@
         @media (max-width: 800px) {
             .sidebar-right {
                 width: 100%;
-                right: -100%;
+                left: -100%;
             }
             .sidebar-right.open {
-                right: 0;
-            }
-            .sidebar-right-toggle.active {
-                right: calc(100% - 45px);
+                left: 0;
             }
         }
 
@@ -1858,10 +1855,15 @@
 <body>
     <div class="bg-animation"></div>
     
-    <!-- 사이드바 토글 버튼 -->
-    <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()">
-        👤 면접원 검색
-    </button>
+    <!-- 왼쪽: 면접원·프로젝트 검색 탭 -->
+    <div class="sidebar-tabs-strip" id="sidebar-tabs-strip">
+        <button type="button" class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()">
+            👤 면접원 검색
+        </button>
+        <button type="button" class="sidebar-right-toggle" id="sidebar-right-toggle" onclick="toggleSidebarRight()">
+            📋 프로젝트 검색
+        </button>
+    </div>
 
     <!-- 사이드바 -->
     <aside class="sidebar" id="sidebar">
@@ -1920,12 +1922,7 @@
     <!-- 토스트 알림 -->
     <div class="toast" id="toast"></div>
 
-    <!-- 오른쪽 사이드바 토글 버튼 (프로젝트 검색) -->
-    <button class="sidebar-right-toggle" id="sidebar-right-toggle" onclick="toggleSidebarRight()">
-        📋 프로젝트 검색
-    </button>
-
-    <!-- 오른쪽 사이드바 (프로젝트 검색) -->
+    <!-- 프로젝트 검색 패널 (왼쪽 슬라이드) -->
     <aside class="sidebar-right" id="sidebar-right">
         <div class="sidebar-header">
             <h2>📋 프로젝트 검색</h2>
@@ -2694,24 +2691,56 @@ const CUSTOM_INTERVIEWERS_KEY = 'customInterviewers';
             name: ''
         };
 
-        // 사이드바 토글 (왼쪽 - 면접원)
+        function syncSidebarTabsStrip() {
+            const strip = document.getElementById('sidebar-tabs-strip');
+            if (!strip) return;
+            const intOpen = document.getElementById('sidebar').classList.contains('open');
+            const projOpen = document.getElementById('sidebar-right').classList.contains('open');
+            strip.classList.toggle('panel-open', intOpen || projOpen);
+        }
+
+        function syncMainContainerShift() {
+            const container = document.getElementById('main-container');
+            if (!container) return;
+            const intOpen = document.getElementById('sidebar').classList.contains('open');
+            const projOpen = document.getElementById('sidebar-right').classList.contains('open');
+            container.classList.toggle('shifted', intOpen || projOpen);
+        }
+
+        // 사이드바 토글 (면접원)
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const toggle = document.getElementById('sidebar-toggle');
-            const container = document.getElementById('main-container');
-            
+            const sidebarRight = document.getElementById('sidebar-right');
+            const toggleRight = document.getElementById('sidebar-right-toggle');
+
+            const willOpen = !sidebar.classList.contains('open');
+            if (willOpen) {
+                sidebarRight.classList.remove('open');
+                toggleRight.classList.remove('active');
+            }
             sidebar.classList.toggle('open');
             toggle.classList.toggle('active');
-            container.classList.toggle('shifted');
+            syncSidebarTabsStrip();
+            syncMainContainerShift();
         }
 
-        // 사이드바 토글 (오른쪽 - 프로젝트)
+        // 사이드바 토글 (프로젝트 — 패널은 왼쪽, 탭은 면접원과 같은 줄)
         function toggleSidebarRight() {
-            const sidebar = document.getElementById('sidebar-right');
-            const toggle = document.getElementById('sidebar-right-toggle');
-            
-            sidebar.classList.toggle('open');
-            toggle.classList.toggle('active');
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.getElementById('sidebar-toggle');
+            const sidebarRight = document.getElementById('sidebar-right');
+            const toggleRight = document.getElementById('sidebar-right-toggle');
+
+            const willOpen = !sidebarRight.classList.contains('open');
+            if (willOpen) {
+                sidebar.classList.remove('open');
+                toggle.classList.remove('active');
+            }
+            sidebarRight.classList.toggle('open');
+            toggleRight.classList.toggle('active');
+            syncSidebarTabsStrip();
+            syncMainContainerShift();
         }
 
         // 최근 검색어 관련 함수
