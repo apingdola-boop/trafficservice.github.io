@@ -1838,6 +1838,27 @@
             border-color: rgba(0, 212, 255, 0.35);
         }
 
+        .top-tab-title { display: inline; }
+        .top-tab-sub { display: inline; }
+
+        @media (max-width: 600px) {
+            .top-tab-btn {
+                line-height: 1.25;
+                padding: 10px 10px;
+            }
+
+            .top-tab-title,
+            .top-tab-sub {
+                display: block;
+            }
+
+            .top-tab-sub {
+                margin-top: 2px;
+                font-size: 0.95em;
+                opacity: 0.95;
+            }
+        }
+
         .tab-panel {
             display: none;
         }
@@ -2082,10 +2103,12 @@
 
         <div class="top-tabs" role="tablist" aria-label="유류비 계산 방식 선택">
             <button class="top-tab-btn active" id="tab-btn-manual" type="button" role="tab" aria-selected="true" aria-controls="tab-manual-route" onclick="setActiveTopTab('manual')">
-                🧭 수동 검색(도로 기반)
+                <span class="top-tab-title">🧭 수동 검색</span>
+                <span class="top-tab-sub">(도로 기반)</span>
             </button>
             <button class="top-tab-btn" id="tab-btn-auto" type="button" role="tab" aria-selected="false" aria-controls="tab-auto-route" onclick="setActiveTopTab('auto')">
-                🗺️ 자동 검색(동 내부 순회)
+                <span class="top-tab-title">🗺️ 자동 검색</span>
+                <span class="top-tab-sub">(동 내부 순회)</span>
             </button>
         </div>
 
