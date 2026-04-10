@@ -3094,6 +3094,21 @@ async function searchInterviewer(event) {
             return `${p} ${v}`.replace(/\s+/g, ' ').trim();
         }
 
+        /** 반복 단어 변경 시 placeholder 갱신 + 이미 입력된 경유지는 검색 쿼리 다시 맞춤 */
+        function onWaypointPrefixInput() {
+            refreshWaypointPlaceholders();
+            document.querySelectorAll('#waypoint-container .waypoint-input').forEach((inp) => {
+                const v = inp.value.trim();
+                if (!v) return;
+                const combo = withWaypointPrefix(v);
+                const hit = placeCoordinateCache.get(v) || placeCoordinateCache.get(combo);
+                if (hit && combo !== v && !placeCoordinateCache.has(combo)) {
+                    placeCoordinateCache.set(combo, hit);
+                }
+                inp.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+        }
+
         /** 반복 단어 변경·경유지 삭제 후에도 placeholder가 맞도록 DOM 순서 기준으로 다시 붙임 */
         function refreshWaypointPlaceholders() {
             const container = document.getElementById('waypoint-container');
@@ -3196,6 +3211,25 @@ async function searchInterviewer(event) {
             return [...keywordResults, ...addressResults].slice(0, 12);
         }
 
+        function cacheWaypointPlaceKeys(label, entry) {
+            if (!label || !entry) return;
+            const pref = getWaypointPrefix().trim();
+            const keys = new Set([label]);
+            if (pref) {
+                const ll = label.toLowerCase();
+                const pl = pref.toLowerCase();
+                if (!ll.startsWith(pl)) {
+                    keys.add(`${pref} ${label}`.replace(/\s+/g, ' ').trim());
+                }
+            }
+            keys.forEach((k) => placeCoordinateCache.set(k, entry));
+            if (keys.size > 1) {
+                console.log(`좌표 캐시 저장(반복단어 키 포함):`, [...keys]);
+            } else {
+                console.log(`좌표 캐시 저장: "${label}"`, entry.x, entry.y);
+            }
+        }
+
         function renderWaypointSuggestions(listEl, inputEl, suggestions) {
             listEl.innerHTML = '';
             if (!suggestions.length) {
@@ -3210,15 +3244,14 @@ async function searchInterviewer(event) {
                 option.addEventListener('mousedown', (event) => {
                     event.preventDefault();
                     inputEl.value = item.label;
-                    // 좌표 정보를 캐시에 저장
                     if (item.x && item.y) {
-                        placeCoordinateCache.set(item.label, {
+                        const entry = {
                             name: item.label,
                             roadAddress: item.roadAddress,
                             x: item.x,
                             y: item.y
-                        });
-                        console.log(`좌표 캐시 저장: "${item.label}"`, item.x, item.y);
+                        };
+                        cacheWaypointPlaceKeys(item.label, entry);
                     }
                     listEl.style.display = 'none';
                 });
@@ -3248,7 +3281,14 @@ async function searchInterviewer(event) {
             });
 
             inputEl.addEventListener('focus', () => {
-                if (listEl.childElementCount > 0) {
+                const q = withWaypointPrefix(inputEl.value);
+                if (q.trim()) {
+                    clearTimeout(debounceId);
+                    debounceId = setTimeout(async () => {
+                        const suggestions = await fetchWaypointSuggestions(q);
+                        renderWaypointSuggestions(listEl, inputEl, suggestions);
+                    }, 120);
+                } else if (listEl.childElementCount > 0) {
                     listEl.style.display = 'block';
                 }
             });
@@ -5269,7 +5309,7 @@ async function searchInterviewer(event) {
             loadBaseLists();
             onAutoTuneToggle();
             const wp = document.getElementById('waypoint-prefix');
-            if (wp) wp.addEventListener('input', refreshWaypointPlaceholders);
+            if (wp) wp.addEventListener('input', onWaypointPrefixInput);
         });
     </script>
 </body>
