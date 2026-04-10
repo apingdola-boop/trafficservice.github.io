@@ -2013,7 +2013,7 @@
             <div class="card">
                 <h2 class="card-title"><span class="icon">🗺️</span> 자동 검색</h2>
                 <p style="font-size:0.88rem; color: var(--text-secondary); margin-bottom: 14px; line-height:1.5;">
-                    <b>날짜·프로젝트·비용·영수증</b>는 <b>아래 공통 카드</b>에서 입력합니다. <b>경유 동 옆 부수</b>만으로 방문지 순회 거리를 넣습니다. (출발·도착은 보통 면접원 주소)
+                    <b>날짜·프로젝트·비용·영수증</b>는 <b>아래 공통 카드</b>에서 입력합니다. <b>경유 동 옆 부수</b>는 아래 옵션에 따라 <b>도로 샘플</b> 또는 <b>순회 모델</b>로 반영됩니다. (출발·도착은 보통 면접원 주소)
                 </p>
                 <div class="mini-grid">
                     <div class="input-group">
@@ -2041,6 +2041,11 @@
                         <input type="checkbox" id="auto_roam_autotune" checked onchange="onAutoTuneToggle()">
                         <label for="auto_roam_autotune" style="cursor:pointer;">자동 보정 (지역·부수 기반으로 계수 대신 사용)</label>
                     </div>
+                    <div style="margin-top:10px; display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; color: var(--text-secondary); font-size:0.9rem; line-height:1.45;">
+                        <input type="checkbox" id="auto_roam_road_sample" checked onchange="onAutoRoadSampleToggle()" style="width:18px; height:18px; flex-shrink:0; margin-top:2px;">
+                        <label for="auto_roam_road_sample" style="cursor:pointer;"><b>동 내부: 도로 샘플</b> (부수만큼 동 중심 주변 장소를 잇는 실제 도로 km — 카카오 호출 증가)</label>
+                    </div>
+                    <p id="auto_road_sample_note" style="font-size:0.78rem; color: var(--text-secondary); margin-top:6px; line-height:1.45;">켜면 순회 모델 대신 샘플링을 씁니다. 끄면 아래 <b>동 내부 평균 계수·자동 보정</b> 순회식을 씁니다.</p>
                 </div>
                 <div class="input-group" style="margin-top: 14px;">
                     <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:0.95rem;">
@@ -2051,8 +2056,9 @@
                 </div>
                 <div class="hint-box" style="margin-top: 12px;">
                     - 도로 거리는 <b>출발 → 경유(순서대로) → 도착</b> 구간을 이어 합니다. (마지막 경유지→도착지 포함)<br>
-                    - <b>경유 동</b> 옆 <b>부</b>만큼 동 내부 순회를 더합니다. (0이면 해당 경유는 순회 제외)<br>
-                    - OpenStreetMap에서 동 경계를 못 찾으면 <b>지름 약 2.4km 추정</b>으로 부수를 반영합니다.<br>
+                    - <b>동 내부: 도로 샘플</b> 켬: 부수(최대 10)만큼 인근 장소를 골라 <b>도로만</b> 이어 합산합니다. 샘플이 부족한 동만 순회식을 일부 더합니다.<br>
+                    - 도로 샘플 끔: <b>경유 동</b> 옆 <b>부</b>에 대해 OSM 지름·순회 모델을 더합니다. (0부면 순회 제외)<br>
+                    - OpenStreetMap에서 동 경계를 못 찾으면 <b>지름 약 2.4km 추정</b>으로 순회식에 반영합니다.<br>
                     - 동 경계는 OpenStreetMap 검색을 쓰므로 <b>시·구·동</b>을 함께 적는 것이 잘 맞습니다.
                 </div>
             </div>
@@ -3968,10 +3974,37 @@ async function searchInterviewer(event) {
         }
 
         function onAutoTuneToggle() {
+            if (document.getElementById('auto_roam_road_sample')?.checked) return;
             const enabled = document.getElementById('auto_roam_autotune').checked;
             const factorInput = document.getElementById('auto_roam_factor');
             factorInput.disabled = enabled;
             factorInput.style.opacity = enabled ? '0.55' : '1';
+        }
+
+        /** 도로 샘플 켜면 순회 계수 UI는 끔(샘플이 순회식을 대체). 끄면 기존 자동보정·계수 사용 */
+        function onAutoRoadSampleToggle() {
+            const road = document.getElementById('auto_roam_road_sample')?.checked ?? false;
+            const tune = document.getElementById('auto_roam_autotune');
+            const factor = document.getElementById('auto_roam_factor');
+            const note = document.getElementById('auto_road_sample_note');
+            if (road) {
+                if (tune) {
+                    tune.disabled = true;
+                    tune.style.opacity = '0.5';
+                }
+                if (factor) {
+                    factor.disabled = true;
+                    factor.style.opacity = '0.45';
+                }
+                if (note) note.style.display = 'block';
+            } else {
+                if (tune) {
+                    tune.disabled = false;
+                    tune.style.opacity = '1';
+                }
+                if (note) note.style.display = 'block';
+                onAutoTuneToggle();
+            }
         }
 
         function haversineKm(a, b) {
@@ -4192,6 +4225,82 @@ async function searchInterviewer(event) {
             return { perBuKm, roamKm, eqFactor, exponent };
         }
 
+        /** 동 내부 도로 샘플: 부수만큼 키워드 검색 후 도로 구간으로만 합산 (카카오 호출 증가) */
+        const AUTO_ROAD_SAMPLE_MAX = 10;
+        const AUTO_ROAD_SAMPLE_RADIUS_M = 2800;
+        const AUTO_ROAD_SAMPLE_DELAY_MS = 100;
+
+        function haversineKmFromXY(ax, ay, bx, by) {
+            return haversineKm(
+                { lat: Number(ay), lon: Number(ax) },
+                { lat: Number(by), lon: Number(bx) }
+            );
+        }
+
+        function orderDongSamplesGreedy(fromCoord, samples) {
+            const pts = samples.map((s) => ({ ...s }));
+            const ordered = [];
+            let curX = fromCoord.x;
+            let curY = fromCoord.y;
+            while (pts.length) {
+                let bi = 0;
+                let bd = Infinity;
+                for (let i = 0; i < pts.length; i++) {
+                    const d = haversineKmFromXY(curX, curY, pts[i].x, pts[i].y);
+                    if (d < bd) {
+                        bd = d;
+                        bi = i;
+                    }
+                }
+                const next = pts.splice(bi, 1)[0];
+                ordered.push(next);
+                curX = next.x;
+                curY = next.y;
+            }
+            return ordered;
+        }
+
+        async function fetchAutoDongRoadSampleCoords(center, targetCount) {
+            const queries = ['편의점', '마트', '주유소', '약국', '은행', '음식점', '카페', '병원', '슈퍼', '세탁'];
+            const seen = new Set();
+            const out = [];
+            const cx = center.x;
+            const cy = center.y;
+            for (const q of queries) {
+                if (out.length >= targetCount) break;
+                await new Promise((r) => setTimeout(r, AUTO_ROAD_SAMPLE_DELAY_MS));
+                const u = new URL('https://dapi.kakao.com/v2/local/search/keyword.json');
+                u.searchParams.set('query', q);
+                u.searchParams.set('x', String(cx));
+                u.searchParams.set('y', String(cy));
+                u.searchParams.set('radius', String(AUTO_ROAD_SAMPLE_RADIUS_M));
+                u.searchParams.set('size', '15');
+                try {
+                    const res = await fetch(u.toString(), {
+                        headers: { Authorization: `KakaoAK ${KAKAO_REST_API_KEY}` }
+                    });
+                    if (!res.ok) continue;
+                    const data = await res.json();
+                    for (const p of data.documents || []) {
+                        const key = `${p.x},${p.y}`;
+                        if (seen.has(key)) continue;
+                        seen.add(key);
+                        const name = p.place_name || p.road_address_name || p.address_name || q;
+                        out.push({
+                            name,
+                            roadAddress: p.road_address_name || p.address_name || name,
+                            x: p.x,
+                            y: p.y
+                        });
+                        if (out.length >= targetCount) break;
+                    }
+                } catch (e) {
+                    console.warn('동 샘플 키워드 검색 실패:', q, e);
+                }
+            }
+            return out;
+        }
+
         async function calculateAutoDong() {
             const btn = document.getElementById('calculate-auto-btn');
             const resultsWrap = document.getElementById('auto-results');
@@ -4227,51 +4336,84 @@ async function searchInterviewer(event) {
             btn.disabled = true;
 
             try {
-                // 1) 이동 경로: 출발 → 경유 → 도착 (복귀 구간 없음)
+                const useRoadSample = document.getElementById('auto_roam_road_sample')?.checked ?? false;
                 const waypointAddresses = waypointStops.map(w => w.address);
-                const moveAddresses = [
-                    startInput,
-                    ...waypointAddresses,
-                    endInput
-                ];
-
-                const coords = await Promise.all(moveAddresses.map(addr => searchAddress(addr)));
-
-                // 2) 도로거리(이동): 기존 로직 그대로 사용 (구간별 호출)
-                const segmentDistances = await getSegmentDistances(coords);
-                const roadKm = segmentDistances.reduce((sum, seg) => sum + Math.round(seg.distance), 0);
-                const estimatedRouteToll = segmentDistances.reduce((sum, seg) => sum + (seg.toll || 0), 0);
-                const appliedEstimatedToll = includeRouteToll ? estimatedRouteToll : 0;
-                const tollFeeTotal = appliedEstimatedToll + manualTollExtra;
-
-                // 3) 동 내부 순회: 경유 동에 적은 부수만 (출발·도착 면접원 주소는 제외)
                 const roamStops = waypointStops
                     .filter(w => (Number(w.bu) || 0) > 0)
                     .map(w => ({ name: w.address, bu: w.bu }));
                 const sumBuForExcel = waypointStops.reduce((s, w) => s + Math.max(0, Number(w.bu) || 0), 0);
 
+                let coords;
                 let roamKmSum = 0;
                 let roamModelText = autoTuneEnabled ? '자동(지역/부수)' : `수동(계수=${manualRoamFactor})`;
-
                 const fallbackRoamNames = [];
-                if (roamStops.length > 0) {
-                    for (let i = 0; i < roamStops.length; i++) {
-                        let dKm = await tryGetDongDiameterKm(roamStops[i].name);
-                        if (dKm == null || dKm <= 0) {
-                            dKm = FALLBACK_DONG_DIAMETER_KM;
-                            fallbackRoamNames.push(roamStops[i].name);
-                        }
-                        const nBu = Number(roamStops[i].bu) || 0;
-                        if (autoTuneEnabled) {
-                            roamKmSum += autoTuneRoam(dKm, nBu).roamKm;
+
+                if (useRoadSample) {
+                    coords = [await searchAddress(startInput)];
+                    for (let wi = 0; wi < waypointStops.length; wi++) {
+                        const w = waypointStops[wi];
+                        const bu = Number(w.bu) || 0;
+                        if (bu > 0) {
+                            const center = await searchAddress(w.address);
+                            const k = Math.min(Math.max(2, bu), AUTO_ROAD_SAMPLE_MAX);
+                            const rawSamples = await fetchAutoDongRoadSampleCoords(center, k);
+                            if (rawSamples.length < 2) {
+                                coords.push(center);
+                                let dKm = await tryGetDongDiameterKm(w.address);
+                                if (dKm == null || dKm <= 0) {
+                                    dKm = FALLBACK_DONG_DIAMETER_KM;
+                                    fallbackRoamNames.push(w.address);
+                                }
+                                if (autoTuneEnabled) {
+                                    roamKmSum += autoTuneRoam(dKm, bu).roamKm;
+                                } else {
+                                    roamKmSum += dKm * manualRoamFactor * bu;
+                                }
+                            } else {
+                                const prev = coords[coords.length - 1];
+                                const ordered = orderDongSamplesGreedy(prev, rawSamples);
+                                ordered.forEach((c) => coords.push(c));
+                            }
                         } else {
-                            roamKmSum += dKm * manualRoamFactor * nBu;
+                            coords.push(await searchAddress(w.address));
                         }
                     }
+                    coords.push(await searchAddress(endInput));
+                    roamModelText = '도로 샘플(인근 장소·최대 ' + AUTO_ROAD_SAMPLE_MAX + '지점/동)';
                     if (fallbackRoamNames.length) {
-                        roamModelText += ` · 동경계 미확보 ${fallbackRoamNames.length}곳 → 지름 ${FALLBACK_DONG_DIAMETER_KM}km 추정`;
+                        roamModelText += ` · 샘플 부족 ${fallbackRoamNames.length}곳 순회 보정`;
+                    }
+                    if (roamKmSum > 0) {
+                        roamModelText += ` (+순회 ${roamKmSum.toFixed(1)}km)`;
+                    }
+                } else {
+                    const moveAddresses = [startInput, ...waypointAddresses, endInput];
+                    coords = await Promise.all(moveAddresses.map((addr) => searchAddress(addr)));
+                    if (roamStops.length > 0) {
+                        for (let i = 0; i < roamStops.length; i++) {
+                            let dKm = await tryGetDongDiameterKm(roamStops[i].name);
+                            if (dKm == null || dKm <= 0) {
+                                dKm = FALLBACK_DONG_DIAMETER_KM;
+                                fallbackRoamNames.push(roamStops[i].name);
+                            }
+                            const nBu = Number(roamStops[i].bu) || 0;
+                            if (autoTuneEnabled) {
+                                roamKmSum += autoTuneRoam(dKm, nBu).roamKm;
+                            } else {
+                                roamKmSum += dKm * manualRoamFactor * nBu;
+                            }
+                        }
+                        if (fallbackRoamNames.length) {
+                            roamModelText += ` · 동경계 미확보 ${fallbackRoamNames.length}곳 → 지름 ${FALLBACK_DONG_DIAMETER_KM}km 추정`;
+                        }
                     }
                 }
+
+                const segmentDistances = await getSegmentDistances(coords);
+                const roadKm = segmentDistances.reduce((sum, seg) => sum + Math.round(seg.distance), 0);
+                const estimatedRouteToll = segmentDistances.reduce((sum, seg) => sum + (seg.toll || 0), 0);
+                const appliedEstimatedToll = includeRouteToll ? estimatedRouteToll : 0;
+                const tollFeeTotal = appliedEstimatedToll + manualTollExtra;
 
                 const totalKmRaw = roadKm + roamKmSum;
                 const roundedTotalKm = Math.round(totalKmRaw);
@@ -4279,18 +4421,28 @@ async function searchInterviewer(event) {
                 const fuelCost = roundedTotalKm * costPerKm;
                 const totalCost = fuelCost + tollFeeTotal + mealFee + otherFee;
 
-                // UI 렌더
                 const flow = document.getElementById('auto-route-flow');
                 flow.innerHTML = '';
-                coords.forEach((coord, index) => {
-                    if (index > 0) flow.innerHTML += '<span class="route-arrow">→</span>';
-                    let pointClass = 'route-point';
-                    if (index === 0) pointClass += ' start';
-                    else if (index === coords.length - 1) pointClass += ' end';
-                    else pointClass += ' waypoint';
-                    flow.innerHTML += `<span class="${pointClass}">${coord.name}</span>`;
-                });
-                if (roamStops.length > 0) {
+                const escFlow = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                if (useRoadSample && coords.length > 8) {
+                    const nMid = coords.length - 2;
+                    flow.innerHTML =
+                        `<span class="route-point start">${escFlow(coords[0].name)}</span>` +
+                        `<span class="route-arrow"> → </span>` +
+                        `<span class="route-point waypoint">동내부 도로샘플 ${nMid}지점</span>` +
+                        `<span class="route-arrow"> → </span>` +
+                        `<span class="route-point end">${escFlow(coords[coords.length - 1].name)}</span>`;
+                } else {
+                    coords.forEach((coord, index) => {
+                        if (index > 0) flow.innerHTML += '<span class="route-arrow">→</span>';
+                        let pointClass = 'route-point';
+                        if (index === 0) pointClass += ' start';
+                        else if (index === coords.length - 1) pointClass += ' end';
+                        else pointClass += ' waypoint';
+                        flow.innerHTML += `<span class="${pointClass}">${escFlow(coord.name)}</span>`;
+                    });
+                }
+                if (!useRoadSample && roamStops.length > 0) {
                     flow.innerHTML += ' <span class="route-arrow">+</span> ';
                     flow.innerHTML += `<span class="route-point waypoint">방문 동 내부(${roamStops.length}곳)</span>`;
                 }
@@ -5326,6 +5478,7 @@ async function searchInterviewer(event) {
             if (tm0 && !String(tm0.value || '').trim()) tm0.value = '자차';
             if (tp0 && !String(tp0.value || '').trim()) tp0.value = '조사';
             loadBaseLists();
+            onAutoRoadSampleToggle();
             onAutoTuneToggle();
             const wp = document.getElementById('waypoint-prefix');
             if (wp) wp.addEventListener('input', onWaypointPrefixInput);
