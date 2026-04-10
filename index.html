@@ -3290,7 +3290,7 @@ async function searchInterviewer(event) {
         // 자동완성에서 선택한 장소의 좌표를 저장하는 캐시
         const placeCoordinateCache = new Map();
 
-        async function fetchWaypointSuggestions(query) {
+        async function fetchWaypointSuggestions(query, isAutoMode = false) {
             const trimmed = query.trim();
             if (!trimmed) return [];
 
@@ -3298,29 +3298,32 @@ async function searchInterviewer(event) {
             const addressResults = [];
             const seen = new Set();
 
-            // 키워드 검색 (상호명) - 먼저 실행
-            try {
-                const keywordUrl = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(trimmed)}&size=15`;
-                const keywordResponse = await fetch(keywordUrl, {
-                    headers: { 'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}` }
-                });
-                if (keywordResponse.ok) {
-                    const keywordData = await keywordResponse.json();
-                    (keywordData.documents || []).forEach(doc => {
-                        if (doc.place_name && !seen.has(doc.place_name)) {
-                            seen.add(doc.place_name);
-                            // 좌표 정보도 함께 저장
-                            keywordResults.push({ 
-                                label: doc.place_name,
-                                x: doc.x,
-                                y: doc.y,
-                                roadAddress: doc.road_address_name || doc.address_name || doc.place_name
-                            });
-                        }
+            // 자동 검색 탭에서는 "동/면/읍/리"만 필요하므로 키워드(장소명) 검색은 끔
+            if (!isAutoMode) {
+                // 키워드 검색 (상호명) - 먼저 실행
+                try {
+                    const keywordUrl = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(trimmed)}&size=15`;
+                    const keywordResponse = await fetch(keywordUrl, {
+                        headers: { 'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}` }
                     });
+                    if (keywordResponse.ok) {
+                        const keywordData = await keywordResponse.json();
+                        (keywordData.documents || []).forEach(doc => {
+                            if (doc.place_name && !seen.has(doc.place_name)) {
+                                seen.add(doc.place_name);
+                                // 좌표 정보도 함께 저장
+                                keywordResults.push({ 
+                                    label: doc.place_name,
+                                    x: doc.x,
+                                    y: doc.y,
+                                    roadAddress: doc.road_address_name || doc.address_name || doc.place_name
+                                });
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.warn('키워드 자동완성 실패:', error);
                 }
-            } catch (error) {
-                console.warn('키워드 자동완성 실패:', error);
             }
 
             // 주소 검색 - 나중에 실행
@@ -3348,7 +3351,22 @@ async function searchInterviewer(event) {
                 console.warn('주소 자동완성 실패:', error);
             }
 
-            // 상호명을 먼저, 주소를 나중에 표시
+            if (isAutoMode) {
+                // 자동 탭: 주소 결과를 동/면/읍/리 수준으로 축약 + 중복 제거
+                const uniq = new Set();
+                const simplified = [];
+                addressResults.forEach((it) => {
+                    const s = simplifyAddressForAutoView(it.label || it.roadAddress || '');
+                    if (!s) return;
+                    if (!/(?:읍|면|동|리)$/.test(s.split(' ').pop() || '')) return;
+                    if (uniq.has(s)) return;
+                    uniq.add(s);
+                    simplified.push({ label: s });
+                });
+                return simplified.slice(0, 12);
+            }
+
+            // 수동: 상호명을 먼저, 주소를 나중에 표시
             return [...keywordResults, ...addressResults].slice(0, 12);
         }
 
@@ -3379,16 +3397,16 @@ async function searchInterviewer(event) {
             }
 
             suggestions.forEach(item => {
-                const displayLabel = isAutoAddressInput(inputEl)
-                    ? simplifyAddressForAutoView(item.label)
-                    : item.label;
+                const isAuto = isAutoAddressInput(inputEl);
+                const displayLabel = isAuto ? (item.label || '') : item.label;
                 const option = document.createElement('div');
                 option.className = 'waypoint-suggestion';
                 option.textContent = displayLabel;
                 option.addEventListener('mousedown', (event) => {
                     event.preventDefault();
                     inputEl.value = displayLabel;
-                    if (item.x && item.y) {
+                    // 자동 탭은 "동/면/읍/리 단위" 입력이 목적이라 좌표 캐시를 저장하지 않음
+                    if (!isAuto && item.x && item.y) {
                         const entry = {
                             name: displayLabel,
                             roadAddress: item.roadAddress,
@@ -3425,7 +3443,8 @@ async function searchInterviewer(event) {
                     return;
                 }
                 debounceId = setTimeout(async () => {
-                    const suggestions = await fetchWaypointSuggestions(q);
+                    const isAuto = isAutoAddressInput(inputEl);
+                    const suggestions = await fetchWaypointSuggestions(q, isAuto);
                     renderWaypointSuggestions(listEl, inputEl, suggestions);
                 }, 250);
             });
