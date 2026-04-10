@@ -2035,15 +2035,7 @@
                     </button>
                 </div>
                 <div id="auto-waypoint-container"></div>
-                <div style="margin-top:12px; display:flex; align-items:center; gap:10px; color: var(--text-secondary); font-size:0.95rem;">
-                    <input type="checkbox" id="auto_return_home" checked>
-                    <label for="auto_return_home" style="cursor:pointer;">도착 후 집(출발지)으로 돌아오기</label>
-                </div>
                 <div class="input-group" style="margin-top: 12px;">
-                    <label for="auto_bu">도착 동 진행 부수</label>
-                    <input type="number" id="auto_bu" value="10" min="0" step="1">
-                </div>
-                <div class="input-group" style="margin-top: 10px;">
                     <label for="auto_roam_factor">동 내부 평균 계수 <span style="font-weight:400; color: var(--text-secondary); font-size:0.85rem;">(순회 거리에 곱함)</span></label>
                     <input type="number" id="auto_roam_factor" value="0.5" min="0" max="2" step="0.1">
                     <div style="margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; color: var(--text-secondary); font-size:0.9rem;">
@@ -2060,7 +2052,8 @@
                 </div>
                 <div class="hint-box" style="margin-top: 12px;">
                     - <b>출발→도착</b>은 카카오 길찾기(도로거리)로 계산합니다.<br>
-                    - <b>경유 동·도착 동 내부</b>는 동 경계 끝-끝(직선)과 부수·자동 보정으로 순회 거리를 잡습니다.
+                    - <b>경유 동 내부</b>만 필요하면 경유지 행에 <b>부수</b>를 넣으세요. (0이면 해당 동 순회는 빼고 도로만 합산)<br>
+                    - 동 경계는 OpenStreetMap 검색을 쓰므로 <b>시·구·동</b>을 함께 적는 것이 잘 맞습니다.
                 </div>
             </div>
         </div>
@@ -3987,37 +3980,77 @@ async function searchInterviewer(event) {
             return haversineKm(sw, ne);
         }
 
-        async function fetchDongBoundaryGeoJson(query) {
-            const q = `${query} 대한민국`;
-            const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&polygon_geojson=1&addressdetails=1&limit=8&q=${encodeURIComponent(q)}`;
-            const res = await fetch(url, {
-                headers: {
-                    // Nominatim 권장: User-Agent/Referer 등. 브라우저에서는 제한이 있어 최소한의 식별만 둠.
-                    'Accept': 'application/json'
-                }
-            });
-            if (!res.ok) {
-                throw new Error(`동 경계 조회 실패 (HTTP ${res.status})`);
-            }
-            const data = await res.json();
-            if (!Array.isArray(data) || data.length === 0) {
-                throw new Error('동 경계를 찾을 수 없습니다. (검색 결과 없음)');
-            }
-
-            // 폴리곤/멀티폴리곤 우선
-            const polygonFirst =
+        function pickBestNominatimHit(data) {
+            if (!Array.isArray(data) || !data.length) return null;
+            const poly =
                 data.find(d => d?.geojson && (d.geojson.type === 'Polygon' || d.geojson.type === 'MultiPolygon')) ||
-                data.find(d => d?.geojson && (d.class === 'boundary' || d.type === 'administrative') && (d.geojson.type === 'Polygon' || d.geojson.type === 'MultiPolygon')) ||
+                data.find(d => d?.geojson && (d.class === 'boundary' || d.type === 'administrative') &&
+                    (d.geojson.type === 'Polygon' || d.geojson.type === 'MultiPolygon')) ||
                 null;
-
-            const best = polygonFirst || data.find(d => d?.geojson) || data[0] || null;
-            if (!best) throw new Error('동 경계를 찾을 수 없습니다. (검색 결과 없음)');
-
+            const hit = poly || data.find(d => d?.geojson) || data[0];
+            if (!hit) return null;
             return {
-                displayName: best.display_name,
-                geojson: best.geojson || null,
-                boundingbox: best.boundingbox || null
+                displayName: hit.display_name,
+                geojson: hit.geojson || null,
+                boundingbox: hit.boundingbox || null
             };
+        }
+
+        async function nominatimFetchSearch(params) {
+            const u = new URL('https://nominatim.openstreetmap.org/search');
+            u.searchParams.set('format', 'jsonv2');
+            u.searchParams.set('addressdetails', '1');
+            if (!params.limit) u.searchParams.set('limit', '8');
+            Object.entries(params).forEach(([k, v]) => {
+                if (v !== undefined && v !== null && v !== '') u.searchParams.set(k, String(v));
+            });
+            const res = await fetch(u.toString(), { headers: { Accept: 'application/json' } });
+            if (!res.ok) throw new Error(`동 경계 조회 실패 (HTTP ${res.status})`);
+            return res.json();
+        }
+
+        /** 여러 쿼리·점검색 폴백으로 한국 읍면동 검색 성공률을 높임 */
+        async function fetchDongBoundaryGeoJson(query) {
+            const raw = (query || '').trim();
+            if (!raw) throw new Error('동 이름이 비어 있습니다.');
+
+            const parts = raw.split(/\s+/).filter(Boolean);
+            const reversed = parts.length > 1 ? [...parts].reverse().join(' ') : '';
+
+            const qTry = [
+                `${raw} 대한민국`,
+                raw,
+                `${raw}, South Korea`,
+                reversed ? `${reversed} 대한민국` : '',
+                reversed || ''
+            ].filter(Boolean);
+
+            for (const q of qTry) {
+                const data = await nominatimFetchSearch({
+                    q,
+                    countrycodes: 'kr',
+                    polygon_geojson: '1',
+                    limit: '8'
+                });
+                const best = pickBestNominatimHit(data);
+                if (best && (best.geojson || (best.boundingbox && best.boundingbox.length >= 4))) {
+                    return best;
+                }
+            }
+
+            for (const q of qTry) {
+                const data = await nominatimFetchSearch({
+                    q,
+                    countrycodes: 'kr',
+                    limit: '6'
+                });
+                const best = pickBestNominatimHit(data);
+                if (best?.boundingbox && best.boundingbox.length >= 4) {
+                    return { ...best, geojson: best.geojson || null };
+                }
+            }
+
+            throw new Error('동 경계를 찾을 수 없습니다. (검색 결과 없음 — 시·구·동을 함께 입력해 보세요)');
         }
 
         async function getDongDiameterKm(dongQuery) {
@@ -4036,6 +4069,14 @@ async function searchInterviewer(event) {
             if (bboxD > 0) return bboxD;
 
             throw new Error('동 경계를 가져왔지만 끝-끝(직선) 거리를 계산할 수 없습니다.');
+        }
+
+        async function tryGetDongDiameterKm(dongQuery) {
+            try {
+                return await getDongDiameterKm(dongQuery);
+            } catch (_) {
+                return null;
+            }
         }
 
         // 지역(동 지름) + 부수 기반 자동 보정 모델
@@ -4069,10 +4110,8 @@ async function searchInterviewer(event) {
 
             const startInput = document.getElementById('auto_start').value.trim();
             const endInput = document.getElementById('auto_end').value.trim();
-            const baseBu = Number(document.getElementById('auto_bu').value || 0);
             const autoTuneEnabled = document.getElementById('auto_roam_autotune')?.checked ?? true;
             const manualRoamFactor = Number(document.getElementById('auto_roam_factor').value || 0);
-            const returnHome = document.getElementById('auto_return_home')?.checked ?? true;
             const waypointStops = getAutoWaypointsWithBu();
 
             const costPerKm = Number(document.getElementById('cost_per_km').value || 180);
@@ -4084,10 +4123,6 @@ async function searchInterviewer(event) {
 
             if (!startInput || !endInput) {
                 showAutoError('출발(읍면동)과 도착(읍면동)을 모두 입력해주세요.');
-                return;
-            }
-            if (!Number.isFinite(baseBu) || baseBu < 0) {
-                showAutoError('도착 동 진행 부수는 0 이상 숫자여야 합니다.');
                 return;
             }
             if (!autoTuneEnabled && (!Number.isFinite(manualRoamFactor) || manualRoamFactor < 0)) {
@@ -4105,12 +4140,11 @@ async function searchInterviewer(event) {
             btn.disabled = true;
 
             try {
-                // 1) 전체 이동 경로 포인트 구성: 출발 → (경유...) → 도착 → (집 복귀 옵션)
+                // 1) 이동 경로: 출발 → 경유 → 도착 (복귀 구간 없음)
                 const moveAddresses = [
                     startInput,
                     ...waypointStops.map(w => w.address),
-                    endInput,
-                    ...(returnHome ? [startInput] : [])
+                    endInput
                 ];
 
                 const coords = await Promise.all(moveAddresses.map(addr => searchAddress(addr)));
@@ -4122,25 +4156,31 @@ async function searchInterviewer(event) {
                 const appliedEstimatedToll = includeRouteToll ? estimatedRouteToll : 0;
                 const tollFeeTotal = appliedEstimatedToll + manualTollExtra;
 
-                // 3) 방문 동 내부 순회(직선 평균): 경유 동 + 최종 도착 동을 대상으로, 각각 부수만큼 계산
-                const roamStops = [
-                    ...waypointStops.map(w => ({ name: w.address, bu: w.bu })),
-                    { name: endInput, bu: baseBu }
-                ].filter(s => (Number(s.bu) || 0) > 0);
+                // 3) 동 내부 순회: 경유 동에만 부수가 있을 때만 반영 (도착 동 고정 부수는 제거됨)
+                const roamStops = waypointStops
+                    .map(w => ({ name: w.address, bu: w.bu }))
+                    .filter(s => (Number(s.bu) || 0) > 0);
 
                 let roamKmSum = 0;
                 let roamModelText = autoTuneEnabled ? '자동(지역/부수)' : `수동(계수=${manualRoamFactor})`;
 
+                const skippedRoam = [];
                 if (roamStops.length > 0) {
-                    const diameters = await Promise.all(roamStops.map(s => getDongDiameterKm(s.name)));
                     for (let i = 0; i < roamStops.length; i++) {
-                        const dKm = diameters[i];
+                        const dKm = await tryGetDongDiameterKm(roamStops[i].name);
+                        if (dKm == null) {
+                            skippedRoam.push(roamStops[i].name);
+                            continue;
+                        }
                         const nBu = Number(roamStops[i].bu) || 0;
                         if (autoTuneEnabled) {
                             roamKmSum += autoTuneRoam(dKm, nBu).roamKm;
                         } else {
                             roamKmSum += dKm * manualRoamFactor * nBu;
                         }
+                    }
+                    if (skippedRoam.length) {
+                        roamModelText += ` · 미조회 ${skippedRoam.length}곳(동 경계 검색 실패)`;
                     }
                 }
 
@@ -4165,13 +4205,14 @@ async function searchInterviewer(event) {
                     flow.innerHTML += `<span class="route-point waypoint">방문 동 내부(${roamStops.length}곳)</span>`;
                 }
 
-                // 도착 동 지름은 대표로 최종 도착 동 값만 표시(상세는 요약 텍스트에 포함)
-                const endDongDiameterKm = await getDongDiameterKm(endInput);
+                // 도착 동 지름(참고): 실패 시에도 도로 합산은 유지
+                const endDongDiameterKm = await tryGetDongDiameterKm(endInput);
 
                 document.getElementById('auto-road-km').textContent = `${Math.round(roadKm)} km`;
-                document.getElementById('auto-dong-diameter').textContent = `${endDongDiameterKm.toFixed(2)} km`;
+                document.getElementById('auto-dong-diameter').textContent =
+                    endDongDiameterKm != null ? `${endDongDiameterKm.toFixed(2)} km` : '-';
                 document.getElementById('auto-roam-km').textContent = `${roamKmSum.toFixed(2)} km`;
-                document.getElementById('auto-roam-model').textContent = roamModelText + (returnHome ? ' + 복귀' : '');
+                document.getElementById('auto-roam-model').textContent = roamModelText;
                 document.getElementById('auto-total-km').textContent = `${totalKm.toFixed(2)} km`;
 
                 document.getElementById('auto-fuel').textContent = Math.round(fuelCost).toLocaleString() + ' 원';
