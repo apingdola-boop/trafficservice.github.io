@@ -873,10 +873,6 @@
             width: 50px;
         }
 
-        #trip_count {
-            width: 70px !important;
-        }
-
         #transport_method {
             width: 140px;
         }
@@ -1993,6 +1989,9 @@
                 <span class="waypoint-prefix-label" title="경유지 칸 placeholder 앞에 붙습니다">반복 단어</span>
                 <input type="text" id="waypoint-prefix" class="waypoint-prefix-input" placeholder="예: CU" maxlength="40" autocomplete="off">
             </div>
+            <p style="margin: 6px 0 10px; font-size: 0.78rem; color: var(--text-secondary); line-height: 1.45;">
+                💡 <b>진행 부수</b>는 <b>경유지 개수</b>와 같게 잡힙니다. (경유지 1칸 = 1부 → 계산·엑셀에 자동 반영)
+            </p>
             <div class="waypoint-container" id="waypoint-container"></div>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                 <button class="btn-add-waypoint" onclick="addWaypoint()">
@@ -2014,7 +2013,7 @@
             <div class="card">
                 <h2 class="card-title"><span class="icon">🗺️</span> 읍면동 자동 계산</h2>
                 <p style="font-size:0.88rem; color: var(--text-secondary); margin-bottom: 14px; line-height:1.5;">
-                    <b>날짜·진행 부수·프로젝트·비용·영수증</b>는 <b>아래 공통 카드</b>에서 입력합니다. 여기서는 <b>읍/면/동 경로</b>와 <b>동 내부 순회</b>만 넣습니다.
+                    <b>날짜·프로젝트·비용·영수증</b>는 <b>아래 공통 카드</b>에서 입력합니다. <b>경유·도착 동 옆의 부수</b>로 동 내부 순회를 넣습니다.
                 </p>
                 <div class="mini-grid">
                     <div class="input-group">
@@ -2024,6 +2023,13 @@
                     <div class="input-group">
                         <label for="auto_end">도착(읍/면/동)</label>
                         <input type="text" id="auto_end" placeholder="예: 창원 진해구 여좌동">
+                    </div>
+                </div>
+                <div class="input-group" style="margin-top: 10px; max-width: 280px;">
+                    <label for="auto_end_bu">도착 동 진행 부수</label>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input type="number" id="auto_end_bu" value="0" min="0" step="1" style="width:100px; padding:10px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.08); color: var(--text-primary);">
+                        <span style="color: var(--text-secondary); font-size:0.9rem;">부</span>
                     </div>
                 </div>
                 <div class="auto-waypoint-actions" style="margin-top: 12px;">
@@ -2052,7 +2058,7 @@
                 </div>
                 <div class="hint-box" style="margin-top: 12px;">
                     - <b>출발→도착</b>은 카카오 길찾기(도로거리)로 계산합니다.<br>
-                    - <b>동 내부 순회</b>는 아래 공통 카드의 <b>진행 부수</b>를 씁니다. (0이면 도로 거리만 합산)<br>
+                    - <b>경유 동·도착 동</b>마다 옆의 <b>부</b>를 넣으면 그만큼 동 내부 순회를 더합니다. (0이면 해당 동은 순회 제외)<br>
                     - 동 경계는 OpenStreetMap 검색을 쓰므로 <b>시·구·동</b>을 함께 적는 것이 잘 맞습니다.
                 </div>
             </div>
@@ -2070,13 +2076,6 @@
                             <span class="date-sep">월</span>
                             <input type="text" id="trip_day" value="" placeholder="일" maxlength="2">
                             <span class="date-sep">일</span>
-                        </div>
-                    </div>
-                    <div class="meta-field">
-                        <label class="meta-label" for="trip_count">진행 부수</label>
-                        <div class="date-input-wrapper">
-                            <input type="text" id="trip_count" value="" placeholder="부수" maxlength="4">
-                            <span class="date-sep">부</span>
                         </div>
                     </div>
                     <div class="meta-field">
@@ -3102,12 +3101,9 @@ async function searchInterviewer(event) {
             });
         }
 
-        // 경유지 추가
-        /** 수동 경유지 개수 = 진행 부수(엑셀 반영) — 경유지 하나당 1부. 경유 없으면 비워 두어 직행 시 수동 입력 가능 */
-        function syncTripCountFromWaypoints() {
-            const n = document.querySelectorAll('#waypoint-container .waypoint-item').length;
-            const el = document.getElementById('trip_count');
-            if (el) el.value = n > 0 ? String(n) : '';
+        /** 수동: 엑셀용 진행 부수 = 경유지 개수(경유 1칸당 1부). 공통 카드 부수 입력란은 없음. */
+        function getManualTripCountForExcel() {
+            return String(document.querySelectorAll('#waypoint-container .waypoint-item').length);
         }
 
         function addWaypoint() {
@@ -3127,7 +3123,6 @@ async function searchInterviewer(event) {
             const input = div.querySelector('.waypoint-input');
             attachWaypointAutocomplete(input);
             refreshWaypointPlaceholders();
-            syncTripCountFromWaypoints();
         }
 
         // 자동완성에서 선택한 장소의 좌표를 저장하는 캐시
@@ -3263,7 +3258,6 @@ async function searchInterviewer(event) {
         function removeWaypoint(id) {
             document.getElementById(`waypoint-${id}`)?.remove();
             refreshWaypointPlaceholders();
-            syncTripCountFromWaypoints();
         }
 
         // 경유지 전체 삭제
@@ -3271,7 +3265,6 @@ async function searchInterviewer(event) {
             const container = document.getElementById('waypoint-container');
             container.innerHTML = '';
             waypointCount = 0;
-            syncTripCountFromWaypoints();
         }
 
         // 모든 경유지 가져오기 (수동 검색 전용 — 주소만)
@@ -3292,12 +3285,20 @@ async function searchInterviewer(event) {
             const div = document.createElement('div');
             div.className = 'waypoint-item';
             div.id = `auto-waypoint-${autoWaypointCount}`;
+            div.style.display = 'flex';
+            div.style.alignItems = 'center';
+            div.style.gap = '10px';
+            div.style.flexWrap = 'wrap';
             div.innerHTML = `
-                <div class="waypoint-input-wrapper" style="flex:1;">
+                <div class="waypoint-input-wrapper" style="flex:1; min-width: 140px;">
                     <input type="text" placeholder="경유 동 ${autoWaypointCount} (예: 진해구 석동)" class="auto-waypoint-input" autocomplete="off">
                     <div class="waypoint-suggestions"></div>
                 </div>
-                <button class="btn-remove-waypoint" type="button" onclick="removeAutoWaypoint(${autoWaypointCount})">✕</button>
+                <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                    <input type="number" class="auto-waypoint-bu" value="0" min="0" step="1" title="이 동 진행 부수" style="width:78px; padding:8px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.08); color: var(--text-primary);">
+                    <span style="color: var(--text-secondary); font-size:0.88rem; white-space:nowrap;">부</span>
+                    <button class="btn-remove-waypoint" type="button" onclick="removeAutoWaypoint(${autoWaypointCount})">✕</button>
+                </div>
             `;
             container.appendChild(div);
 
@@ -3315,10 +3316,14 @@ async function searchInterviewer(event) {
             autoWaypointCount = 0;
         }
 
-        function getAutoWaypointAddresses() {
+        function getAutoWaypointsWithBu() {
             return Array.from(document.querySelectorAll('#auto-waypoint-container .waypoint-item'))
-                .map(item => item.querySelector('.auto-waypoint-input')?.value?.trim() || '')
-                .filter(Boolean);
+                .map(item => {
+                    const addr = item.querySelector('.auto-waypoint-input')?.value?.trim() || '';
+                    const bu = Number(item.querySelector('.auto-waypoint-bu')?.value || 0);
+                    return { address: addr, bu: Number.isFinite(bu) ? bu : 0 };
+                })
+                .filter(x => x.address);
         }
 
         // 카카오 REST API로 주소 검색
@@ -3734,7 +3739,7 @@ async function searchInterviewer(event) {
             const tripMonth = parseInt(document.getElementById('trip_month').value) || (today.getMonth() + 1);
             const tripDay = parseInt(document.getElementById('trip_day').value) || today.getDate();
             const tripDateText = `${tripMonth}월 ${tripDay}일`;
-            const tripCount = document.getElementById('trip_count').value.trim(); // 진행 부수
+            const tripCount = getManualTripCountForExcel();
             const transportMethod = document.getElementById('transport_method').value.trim(); // 교통수단
             const tripPurpose = document.getElementById('trip_purpose').value.trim(); // 용무
 
@@ -4127,8 +4132,8 @@ async function searchInterviewer(event) {
             const endInput = document.getElementById('auto_end').value.trim();
             const autoTuneEnabled = document.getElementById('auto_roam_autotune')?.checked ?? true;
             const manualRoamFactor = Number(document.getElementById('auto_roam_factor').value || 0);
-            const waypointAddresses = getAutoWaypointAddresses();
-            const tripCountNum = Math.max(0, parseInt(String(document.getElementById('trip_count').value || '').trim(), 10) || 0);
+            const waypointStops = getAutoWaypointsWithBu();
+            const endBu = Math.max(0, parseInt(String(document.getElementById('auto_end_bu')?.value ?? '0').trim(), 10) || 0);
 
             const costPerKm = Number(document.getElementById('cost_per_km').value || 180);
             const manualTollExtra = Number(document.getElementById('toll_fee').value) || 0;
@@ -4145,6 +4150,14 @@ async function searchInterviewer(event) {
                 showAutoError('동 내부 평균 계수는 0 이상 숫자여야 합니다.');
                 return;
             }
+            if (waypointStops.some(w => !Number.isFinite(w.bu) || w.bu < 0)) {
+                showAutoError('경유 동의 부수는 0 이상 숫자여야 합니다.');
+                return;
+            }
+            if (!Number.isFinite(endBu) || endBu < 0) {
+                showAutoError('도착 동 부수는 0 이상 숫자여야 합니다.');
+                return;
+            }
             hideAutoError();
             resultsWrap.style.display = 'none';
             btn.classList.add('loading');
@@ -4152,6 +4165,7 @@ async function searchInterviewer(event) {
 
             try {
                 // 1) 이동 경로: 출발 → 경유 → 도착 (복귀 구간 없음)
+                const waypointAddresses = waypointStops.map(w => w.address);
                 const moveAddresses = [
                     startInput,
                     ...waypointAddresses,
@@ -4167,14 +4181,12 @@ async function searchInterviewer(event) {
                 const appliedEstimatedToll = includeRouteToll ? estimatedRouteToll : 0;
                 const tollFeeTotal = appliedEstimatedToll + manualTollExtra;
 
-                // 3) 동 내부 순회: 공통 카드「진행 부수」를 경유 동·도착 동 각각에 적용 (0이면 순회 없음)
-                const roamStops = [];
-                if (tripCountNum > 0) {
-                    for (const addr of waypointAddresses) {
-                        roamStops.push({ name: addr, bu: tripCountNum });
-                    }
-                    roamStops.push({ name: endInput, bu: tripCountNum });
-                }
+                // 3) 동 내부 순회: 경유 행·도착 행에 적은 부수만큼
+                const roamStops = [
+                    ...waypointStops.filter(w => (Number(w.bu) || 0) > 0).map(w => ({ name: w.address, bu: w.bu })),
+                    ...(endBu > 0 ? [{ name: endInput, bu: endBu }] : [])
+                ];
+                const sumBuForExcel = waypointStops.reduce((s, w) => s + Math.max(0, Number(w.bu) || 0), 0) + endBu;
 
                 let roamKmSum = 0;
                 let roamModelText = autoTuneEnabled ? '자동(지역/부수)' : `수동(계수=${manualRoamFactor})`;
@@ -4261,7 +4273,7 @@ async function searchInterviewer(event) {
                 const tripMonth = parseInt(document.getElementById('trip_month').value) || (today.getMonth() + 1);
                 const tripDay = parseInt(document.getElementById('trip_day').value) || today.getDate();
                 const tripDateText = `${tripMonth}월 ${tripDay}일`;
-                const tripCount = (document.getElementById('trip_count').value || '').trim();
+                const tripCount = String(sumBuForExcel);
                 const transportMethod = (document.getElementById('transport_method').value || '').trim();
                 const tripPurpose = (document.getElementById('trip_purpose').value || '').trim();
                 const projectNum1 = (document.getElementById('project_num1').value || '').trim();
@@ -5253,7 +5265,6 @@ async function searchInterviewer(event) {
             if (tp0 && !String(tp0.value || '').trim()) tp0.value = '조사';
             loadBaseLists();
             onAutoTuneToggle();
-            syncTripCountFromWaypoints();
             const wp = document.getElementById('waypoint-prefix');
             if (wp) wp.addEventListener('input', refreshWaypointPlaceholders);
         });
