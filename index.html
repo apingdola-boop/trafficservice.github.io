@@ -4301,6 +4301,82 @@ async function searchInterviewer(event) {
             return out;
         }
 
+        /** 엑셀·H-챗: 도로명 대신 "OO구 OO동" 형태로 축약 (없으면 원문·일부 생략) */
+        function shortAdminDongLine(text) {
+            const s = (text || '').trim();
+            if (!s) return '';
+            const re = /([\w가-힣]+구)\s+([\w가-힣0-9]+동)\b/;
+            const m = s.match(re);
+            if (m) return `${m[1]} ${m[2]}`;
+            const re2 = /([\w가-힣]+(?:시|군))\s+([\w가-힣]+구)\s+([\w가-힣0-9]+동)\b/;
+            const m2 = s.match(re2);
+            if (m2) return `${m2[2]} ${m2[3]}`;
+            return s.length > 40 ? `${s.slice(0, 37)}…` : s;
+        }
+
+        function distributeKmIntegers(totalKm, segmentCount) {
+            const n = Math.max(1, Math.floor(segmentCount));
+            const t = Math.max(0, Math.round(Number(totalKm) || 0));
+            const base = Math.floor(t / n);
+            let rem = t - base * n;
+            const arr = [];
+            for (let i = 0; i < n; i++) {
+                arr.push(base + (rem > 0 ? 1 : 0));
+                if (rem > 0) rem--;
+            }
+            return arr;
+        }
+
+        /**
+         * 자동 검색 전용: 부수만큼 동 라벨을 반복한 체인 + 총 km를 구간별로 나눠 엑셀 행과 동일하게 맞춤
+         * @returns {{ segments: Array<{from,to,distance,duration,toll}>, points: string[] }}
+         */
+        function buildAutoExcelExportPackage(waypointStops, startInput, endInput, roundedTotalKm) {
+            const startS = shortAdminDongLine(startInput);
+            const endS = shortAdminDongLine(endInput);
+            const slots = [];
+            for (const w of waypointStops) {
+                const bu = Math.max(0, Number(w.bu) || 0);
+                const short = shortAdminDongLine(w.address) || (w.address || '').trim();
+                if (bu <= 0) {
+                    if (w.address && String(w.address).trim()) slots.push(short);
+                    continue;
+                }
+                for (let j = 0; j < bu; j++) slots.push(short);
+            }
+            if (slots.length === 0 && waypointStops.length) {
+                waypointStops.forEach((w) => {
+                    if (w.address && String(w.address).trim()) {
+                        slots.push(shortAdminDongLine(w.address) || w.address.trim());
+                    }
+                });
+            }
+            if (slots.length === 0) {
+                const oneKm = Math.max(0, Math.round(Number(roundedTotalKm) || 0));
+                return {
+                    segments: [{
+                        from: startS || startInput,
+                        to: endS || endInput,
+                        distance: oneKm,
+                        duration: 0,
+                        toll: 0
+                    }],
+                    points: [startS || startInput, endS || endInput]
+                };
+            }
+            const points = [startS || startInput, ...slots, endS || endInput];
+            const nSegs = points.length - 1;
+            const kms = distributeKmIntegers(roundedTotalKm, nSegs);
+            const segments = kms.map((km, i) => ({
+                from: points[i],
+                to: points[i + 1],
+                distance: km,
+                duration: 0,
+                toll: 0
+            }));
+            return { segments, points };
+        }
+
         async function calculateAutoDong() {
             const btn = document.getElementById('calculate-auto-btn');
             const resultsWrap = document.getElementById('auto-results');
@@ -4498,6 +4574,9 @@ async function searchInterviewer(event) {
                     : '';
                 const projectName = (document.getElementById('project_name').value || '').trim();
 
+                // 엑셀·H-챗: 구·동 축약 + 부수만큼 방문 행 + 총 km를 구간별 정수로 분배 (내비 원시 구간 대신)
+                const excelPack = buildAutoExcelExportPackage(waypointStops, startInput, endInput, roundedTotalKm);
+
                 // duration은 현재 탭2에서 별도 합산하지 않으므로 0/빈값 처리 (엑셀은 주로 거리/비용 사용)
                 lastCalculationResult = {
                     date: tripDateText,
@@ -4510,7 +4589,12 @@ async function searchInterviewer(event) {
                     interviewerName: selectedInterviewer?.name,
                     coords: coords,
                     distanceKm: roundedTotalKm,
-                    segmentDistances: segmentDistances,
+                    segmentDistances: excelPack.segments,
+                    segmentDistancesNav: segmentDistances,
+                    autoExcelSimplified: true,
+                    routePoints: excelPack.points,
+                    start: excelPack.points[0],
+                    end: excelPack.points[excelPack.points.length - 1],
                     duration: 0,
                     durationText: '',
                     costPerKm: costPerKm,
@@ -5218,6 +5302,23 @@ async function searchInterviewer(event) {
             return document.getElementById('project_name').value.trim();
         }
 
+        /** 엑셀·H-챗 요약 한 줄 (자동: OO구 OO동 체인 + 부수·총km, 수동: 출발→도착) */
+        function formatSettlementRouteSummaryLine(item) {
+            const cost = `${(item.totalCost != null ? item.totalCost : 0).toLocaleString()}원`;
+            if (item.routePoints && item.routePoints.length >= 2) {
+                const path = item.routePoints.join(' → ');
+                const bu =
+                    item.tripCount != null && item.tripCount !== ''
+                        ? `부수 ${item.tripCount} · `
+                        : '';
+                const km = `총 ${Math.round(Number(item.distanceKm) || 0)}km`;
+                return `${item.date} | ${path} | ${bu}${km} | ${cost}`;
+            }
+            const startPoint = item.start || item.startAddress || '';
+            const endPoint = item.end || item.endAddress || '';
+            return `${item.date} | ${startPoint} → ${endPoint} | ${cost}`;
+        }
+
         // EmailJS로 자동 이메일 전송 + Supabase 업로드 + companychat 연동
         // companychat으로 전송 (Supabase Storage 업로드 + postMessage)
         async function sendToCompanyChat(ev) {
@@ -5291,15 +5392,11 @@ async function searchInterviewer(event) {
             
             if (accumulatedResults.length > 0) {
                 accumulatedResults.forEach((item, idx) => {
-                    const startPoint = item.routePoints ? item.routePoints[0] : item.start;
-                    const endPoint = item.routePoints ? item.routePoints[item.routePoints.length - 1] : item.end;
-                    routeList += `${idx + 1}. ${item.date} | ${startPoint} → ${endPoint} | ${item.totalCost.toLocaleString()}원\n`;
+                    routeList += `${idx + 1}. ${formatSettlementRouteSummaryLine(item)}\n`;
                     totalCost += item.totalCost;
                 });
             } else if (lastCalculationResult) {
-                const startPoint = lastCalculationResult.routePoints ? lastCalculationResult.routePoints[0] : lastCalculationResult.start;
-                const endPoint = lastCalculationResult.routePoints ? lastCalculationResult.routePoints[lastCalculationResult.routePoints.length - 1] : lastCalculationResult.end;
-                routeList = `${lastCalculationResult.date} | ${startPoint} → ${endPoint} | ${lastCalculationResult.totalCost.toLocaleString()}원`;
+                routeList = formatSettlementRouteSummaryLine(lastCalculationResult);
                 totalCost = lastCalculationResult.totalCost;
             }
             
@@ -5413,15 +5510,11 @@ async function searchInterviewer(event) {
             
             if (accumulatedResults.length > 0) {
                 accumulatedResults.forEach((item, idx) => {
-                    const startPoint = item.routePoints ? item.routePoints[0] : item.start;
-                    const endPoint = item.routePoints ? item.routePoints[item.routePoints.length - 1] : item.end;
-                    routeList += `${idx + 1}. ${item.date} | ${startPoint} → ${endPoint} | ${item.totalCost.toLocaleString()}원\n`;
+                    routeList += `${idx + 1}. ${formatSettlementRouteSummaryLine(item)}\n`;
                     totalCost += item.totalCost;
                 });
             } else if (lastCalculationResult) {
-                const startPoint = lastCalculationResult.routePoints ? lastCalculationResult.routePoints[0] : lastCalculationResult.start;
-                const endPoint = lastCalculationResult.routePoints ? lastCalculationResult.routePoints[lastCalculationResult.routePoints.length - 1] : lastCalculationResult.end;
-                routeList = `${lastCalculationResult.date} | ${startPoint} → ${endPoint} | ${lastCalculationResult.totalCost.toLocaleString()}원`;
+                routeList = formatSettlementRouteSummaryLine(lastCalculationResult);
                 totalCost = lastCalculationResult.totalCost;
             }
             
