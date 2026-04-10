@@ -2013,7 +2013,7 @@
             <div class="card">
                 <h2 class="card-title"><span class="icon">🗺️</span> 자동 검색</h2>
                 <p style="font-size:0.88rem; color: var(--text-secondary); margin-bottom: 14px; line-height:1.5;">
-                    <b>날짜·프로젝트·비용·영수증</b>는 <b>아래 공통 카드</b>에서 입력합니다. <b>경유 동 옆 부수</b>만으로 방문지 순회 거리를 넣습니다. (출발·도착은 보통 면접원 주소)
+                    <b>날짜·프로젝트·비용·영수증</b>는 <b>아래 공통 카드</b>에서 입력합니다. <b>경유 동 옆 부수</b>는 칸당 <b>최대 10부</b>까지이며, 이 값만으로 방문지 순회 거리를 넣습니다. (출발·도착은 보통 면접원 주소)
                 </p>
                 <div class="mini-grid">
                     <div class="input-group">
@@ -2051,7 +2051,7 @@
                 </div>
                 <div class="hint-box" style="margin-top: 12px;">
                     - 도로 거리는 <b>출발 → 경유(순서대로) → 도착</b> 구간을 이어 합니다. (마지막 경유지→도착지 포함)<br>
-                    - <b>경유 동</b> 옆 <b>부</b>만큼 동 내부 순회를 더합니다. (0이면 해당 경유는 순회 제외)<br>
+                    - <b>경유 동</b> 옆 <b>부</b>(1~10)만큼 동 내부 순회를 더합니다. (0이면 해당 경유는 순회 제외)<br>
                     - OpenStreetMap에서 동 경계를 못 찾으면 <b>지름 약 2.4km 추정</b>으로 부수를 반영합니다.<br>
                     - 동 경계는 OpenStreetMap 검색을 쓰므로 <b>시·구·동</b>을 함께 적는 것이 잘 맞습니다.
                 </div>
@@ -3289,7 +3289,7 @@ async function searchInterviewer(event) {
                     <div class="waypoint-suggestions"></div>
                 </div>
                 <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-                    <input type="number" class="auto-waypoint-bu" value="0" min="0" step="1" title="이 동 진행 부수" style="width:78px; padding:8px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.08); color: var(--text-primary);">
+                    <input type="number" class="auto-waypoint-bu" value="0" min="0" max="10" step="1" title="이 동 진행 부수 (최대 10)" style="width:78px; padding:8px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.08); color: var(--text-primary);">
                     <span style="color: var(--text-secondary); font-size:0.88rem; white-space:nowrap;">부</span>
                     <button class="btn-remove-waypoint" type="button" onclick="removeAutoWaypoint(${autoWaypointCount})">✕</button>
                 </div>
@@ -4095,6 +4095,8 @@ async function searchInterviewer(event) {
 
         /** 동 경계 검색 실패 시에도 경유 부수가 거리에 반영되도록 쓰는 추정 지름(km) */
         const FALLBACK_DONG_DIAMETER_KM = 2.4;
+        /** 경유 동 한 칸당 진행 부수 상한 */
+        const AUTO_WAYPOINT_MAX_BU = 10;
 
         // 지역(동 지름) + 부수 기반 자동 보정 모델
         // - perBuKm: 1부당 평균 순회거리(km)
@@ -4148,6 +4150,10 @@ async function searchInterviewer(event) {
             }
             if (waypointStops.some(w => !Number.isFinite(w.bu) || w.bu < 0)) {
                 showAutoError('경유 동의 부수는 0 이상 숫자여야 합니다.');
+                return;
+            }
+            if (waypointStops.some(w => w.bu > AUTO_WAYPOINT_MAX_BU)) {
+                showAutoError(`경유 동 한 칸의 부수는 최대 ${AUTO_WAYPOINT_MAX_BU}까지입니다.`);
                 return;
             }
             hideAutoError();
