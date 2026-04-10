@@ -914,7 +914,32 @@
             .date-input-row {
                 width: 100%;
                 grid-template-columns: 1fr 1fr;
+                grid-template-areas:
+                    "date date"
+                    "transport purpose";
                 gap: 12px;
+            }
+
+            .date-block { grid-area: date; }
+            .meta-transport { grid-area: transport; }
+            .meta-purpose { grid-area: purpose; }
+
+            .date-block,
+            .meta-transport,
+            .meta-purpose {
+                padding: 8px 10px;
+                border-radius: 12px;
+                background: rgba(255,255,255,0.04);
+                border: 1px solid rgba(255,255,255,0.10);
+            }
+
+            .meta-label {
+                text-align: left;
+            }
+
+            .date-input-wrapper {
+                width: 100%;
+                justify-content: flex-start;
             }
 
             .meta-field {
@@ -927,6 +952,11 @@
             #trip_purpose {
                 width: 100%;
                 min-width: 0;
+            }
+
+            #trip_month,
+            #trip_day {
+                text-align: center;
             }
         }
 
@@ -2165,11 +2195,11 @@
                             <span class="date-sep">일</span>
                         </div>
                     </div>
-                    <div class="meta-field">
+                    <div class="meta-field meta-transport">
                         <label class="meta-label" for="transport_method">교통수단</label>
                         <input type="text" id="transport_method" value="자차" placeholder="예: 자차" maxlength="20">
                     </div>
-                    <div class="meta-field">
+                    <div class="meta-field meta-purpose">
                         <label class="meta-label" for="trip_purpose">용무</label>
                         <input type="text" id="trip_purpose" value="조사" placeholder="예: 회의" maxlength="30">
                     </div>
