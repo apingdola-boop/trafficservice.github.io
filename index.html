@@ -1962,9 +1962,6 @@
                     <span>🗑️</span> 전체 삭제
                 </button>
             </div>
-            <p style="margin-top: 10px; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.45;">
-                경유지마다 <b>몇 부</b>를 넣으면 해당 지역(동) 안 순회 거리에 반영됩니다. 도착 동 부수는 아래 날짜 칸의 <b>도착 동 진행 부수</b>를 사용합니다. 동 내부 자동 보정은 <b>읍면동 자동</b> 탭의 옵션과 같습니다.
-            </p>
 
             <div class="input-group" style="margin-top: 20px;">
                 <label for="end">도착지 <span style="color: var(--accent-magenta); font-size: 0.8rem;">(👤 면접원 검색으로 자동 입력 가능)</span></label>
@@ -1986,7 +1983,7 @@
                         </div>
                     </div>
                     <div class="meta-field">
-                        <label class="meta-label" for="trip_count">도착 동 진행 부수</label>
+                        <label class="meta-label" for="trip_count">진행 부수</label>
                         <div class="date-input-wrapper">
                             <input type="text" id="trip_count" value="" placeholder="부수" maxlength="4">
                             <span class="date-sep">부</span>
@@ -2032,16 +2029,9 @@
                 </div>
                 <div class="cost-item-large">
                     <label for="toll_fee">🛣️ 통행료</label>
-                    <div style="display:flex; flex-direction:column; gap:10px;">
-                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:0.9rem; color: var(--text-secondary);">
-                            <input type="checkbox" id="include_route_toll" checked style="width:18px; height:18px;">
-                            <span>예상 통행료 반영 (추천 경로·구간 합산)</span>
-                        </label>
-                        <div class="cost-input-wrapper-large">
-                            <input type="number" id="toll_fee" value="0" min="0" step="100" title="영수증 등 추가 통행료">
-                            <span class="unit">원</span>
-                        </div>
-                        <span style="font-size:0.78rem; color: var(--text-secondary);">예상액은 길찾기 API 요금 합계이며, 아래 입력은 추가로 더합니다.</span>
+                    <div class="cost-input-wrapper-large">
+                        <input type="number" id="toll_fee" value="0" min="0" step="100">
+                        <span class="unit">원</span>
                     </div>
                 </div>
                 <div class="cost-item-large">
@@ -2202,21 +2192,40 @@
         <div class="tab-panel" id="tab-auto" role="tabpanel" aria-labelledby="tab-btn-auto">
             <div class="card">
                 <h2 class="card-title"><span class="icon">🗺️</span> 읍면동 자동 계산</h2>
-                <div class="hint-box" style="margin-bottom: 12px;">
-                    <b>출발지·도착지·경유지(몇 부)</b>는 위 <b>경로 설정</b>과 동일합니다. 이 탭에서는 동 내부 순회 옵션만 조정합니다.
-                </div>
+                <p style="font-size:0.88rem; color: var(--text-secondary); margin-bottom: 14px; line-height:1.5;">
+                    <b>날짜·진행 부수·프로젝트·km당 유류비·통행료(추가)·식비·기타</b>는 위쪽 카드와 <b>같은 입력</b>을 씁니다. 이 탭에서는 <b>읍/면/동 단위 경로</b>와 <b>동 내부 순회</b>만 따로 넣습니다.
+                </p>
 
-                <div style="margin-top: 10px;">
-                    <div style="margin-top:10px; display:flex; align-items:center; gap:10px; color: var(--text-secondary); font-size:0.95rem;">
-                        <input type="checkbox" id="auto_return_home" checked>
-                        <label for="auto_return_home" style="cursor:pointer;">도착 후 집(출발지)으로 돌아오기</label>
+                <div class="mini-grid">
+                    <div class="input-group">
+                        <label for="auto_start">출발(읍/면/동)</label>
+                        <input type="text" id="auto_start" placeholder="예: 부산 연제구 연산동">
+                    </div>
+                    <div class="input-group">
+                        <label for="auto_end">도착(읍/면/동)</label>
+                        <input type="text" id="auto_end" placeholder="예: 창원 진해구 여좌동">
                     </div>
                 </div>
 
-                <div class="mini-grid" style="margin-top: 6px;">
+                <div class="auto-waypoint-actions" style="margin-top: 12px;">
+                    <button class="btn-add-waypoint" type="button" onclick="addAutoWaypoint()">
+                        <span>➕</span> 경유지(동) 추가
+                    </button>
+                    <button class="btn-clear-auto" type="button" onclick="clearAllAutoWaypoints()">
+                        <span>🗑️</span> 전체 삭제
+                    </button>
+                </div>
+                <div id="auto-waypoint-container"></div>
+
+                <div style="margin-top:12px; display:flex; align-items:center; gap:10px; color: var(--text-secondary); font-size:0.95rem;">
+                    <input type="checkbox" id="auto_return_home" checked>
+                    <label for="auto_return_home" style="cursor:pointer;">도착 후 집(출발지)으로 돌아오기</label>
+                </div>
+
+                <div class="mini-grid" style="margin-top: 12px;">
                     <div class="input-group">
-                        <label>도착 동 부수</label>
-                        <div style="color: var(--text-secondary); font-size:0.92rem; line-height:1.4;">위 날짜 카드의 <b>도착 동 진행 부수</b>를 사용합니다.</div>
+                        <label for="auto_bu">도착 동 진행 부수</label>
+                        <input type="number" id="auto_bu" value="10" min="0" step="1">
                     </div>
                     <div class="input-group">
                         <label for="auto_roam_factor">동 내부 평균 계수</label>
@@ -2224,106 +2233,22 @@
                         <div style="margin-top:8px; display:flex; align-items:center; gap:8px; color: var(--text-secondary); font-size:0.9rem;">
                             <input type="checkbox" id="auto_roam_autotune" checked onchange="onAutoTuneToggle()">
                             <label for="auto_roam_autotune" style="cursor:pointer;">자동 보정</label>
-                            <span id="auto_roam_autotune_hint" style="opacity:0.85;">(지역/부수 기반)</span>
+                            <span style="opacity:0.85;">(지역/부수 기반)</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="hint-box">
+                <div class="input-group" style="margin-top: 14px;">
+                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:0.95rem;">
+                        <input type="checkbox" id="include_route_toll" checked style="width:18px; height:18px;">
+                        <span>예상 통행료 반영 (추천 경로·구간 합산)</span>
+                    </label>
+                    <p style="font-size:0.8rem; color: var(--text-secondary); margin-top:8px; line-height:1.45;">끄면 API 예상 통행료는 빼고, 위쪽 <b>통행료</b> 입력만 합산합니다. 켜면 예상액 + 위 통행료 입력이 함께 들어갑니다.</p>
+                </div>
+
+                <div class="hint-box" style="margin-top: 12px;">
                     - <b>출발→도착</b>은 카카오 길찾기(도로거리)로 계산합니다.<br>
-                    - <b>도착 동 내부</b>는 “동 경계의 끝-끝(직선)”을 구해, <b>(끝-끝 × 계수 × 부수)</b>로 평균 순회거리를 잡습니다.
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-title-with-date">
-                    <h2 class="card-title" style="margin-bottom: 0;"><span class="icon">📅</span> 날짜/메타/프로젝트</h2>
-                </div>
-
-                <div class="date-input-row" style="margin-top: 14px;">
-                    <div class="date-block">
-                        <div class="date-input-wrapper">
-                            <input type="text" id="auto_trip_month" value="" placeholder="월" maxlength="2">
-                            <span class="date-sep">월</span>
-                            <input type="text" id="auto_trip_day" value="" placeholder="일" maxlength="2">
-                            <span class="date-sep">일</span>
-                        </div>
-                    </div>
-                    <div class="meta-field">
-                        <label class="meta-label" for="auto_trip_count">진행 부수(표기용)</label>
-                        <div class="date-input-wrapper">
-                            <input type="text" id="auto_trip_count" value="" placeholder="부수" maxlength="4">
-                            <span class="date-sep">부</span>
-                        </div>
-                    </div>
-                    <div class="meta-field">
-                        <label class="meta-label" for="auto_transport_method">교통수단</label>
-                        <input type="text" id="auto_transport_method" value="" placeholder="예: 자차" maxlength="20">
-                    </div>
-                    <div class="meta-field">
-                        <label class="meta-label" for="auto_trip_purpose">용무</label>
-                        <input type="text" id="auto_trip_purpose" value="" placeholder="예: 회의" maxlength="30">
-                    </div>
-                </div>
-
-                <div class="project-info-row" style="margin-top: 20px;">
-                    <div class="project-item">
-                        <label>📋 프로젝트 번호</label>
-                        <div class="project-number-wrapper">
-                            <input type="text" id="auto_project_num1" maxlength="4" placeholder="0000">
-                            <span class="project-sep">-</span>
-                            <input type="text" id="auto_project_num2" maxlength="2" placeholder="00">
-                            <span class="project-sep">-</span>
-                            <input type="text" id="auto_project_num3" maxlength="4" placeholder="0000">
-                        </div>
-                    </div>
-                    <div class="project-item project-name-item">
-                        <label>📝 프로젝트 명</label>
-                        <input type="text" id="auto_project_name" class="project-name-input" placeholder="프로젝트 명 입력">
-                    </div>
-                </div>
-
-                <div class="hint-box" style="margin-top: 14px;">
-                    - <b>면접원</b>은 왼쪽 <b>면접원 검색</b>에서 선택하면 자동으로 적용됩니다.<br>
-                    - 탭2 엑셀 출력은 위 입력값(날짜/프로젝트/메타)을 사용합니다.
-                </div>
-            </div>
-
-            <div class="card">
-                <h2 class="card-title"><span class="icon">💸</span> 비용 설정</h2>
-                <div class="cost-settings-grid-4" style="margin-top: 8px;">
-                    <div class="cost-item-large">
-                        <label for="auto_cost_per_km">⛽ km당 유류비</label>
-                        <div class="cost-input-wrapper-large">
-                            <input type="number" id="auto_cost_per_km" value="180" min="50" max="500" step="10">
-                            <span class="unit">원/km</span>
-                        </div>
-                    </div>
-                    <div class="cost-item-large">
-                        <label for="auto_toll_fee">🛣️ 통행료(추가 입력)</label>
-                        <p style="font-size:0.78rem; color: var(--text-secondary); margin: 0 0 8px;">예상 통행료 반영 ON/OFF는 위쪽 비용 설정의 체크박스와 같습니다.</p>
-                        <div class="cost-input-wrapper-large">
-                            <input type="number" id="auto_toll_fee" value="0" min="0" step="100">
-                            <span class="unit">원</span>
-                        </div>
-                    </div>
-                    <div class="cost-item-large">
-                        <label for="auto_meal_fee">🍽️ 식비</label>
-                        <div class="cost-input-wrapper-large">
-                            <input type="number" id="auto_meal_fee" value="0" min="0" step="1000">
-                            <span class="unit">원</span>
-                        </div>
-                    </div>
-                    <div class="cost-item-large">
-                        <div class="custom-label-wrapper">
-                            <span>📦</span>
-                            <input type="text" id="auto_other_label" class="custom-label-input" placeholder="기타" value="">
-                        </div>
-                        <div class="cost-input-wrapper-large">
-                            <input type="number" id="auto_other_fee" value="0" min="0" step="100">
-                            <span class="unit">원</span>
-                        </div>
-                    </div>
+                    - <b>경유 동·도착 동 내부</b>는 동 경계 끝-끝(직선)과 부수·자동 보정으로 순회 거리를 잡습니다.
                 </div>
             </div>
 
@@ -3118,11 +3043,7 @@ async function searchInterviewer(event) {
                     <input type="text" placeholder="경유지 ${waypointCount}" class="waypoint-input" autocomplete="off">
                     <div class="waypoint-suggestions"></div>
                 </div>
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <input type="number" class="waypoint-bu" value="0" min="0" step="1" style="width:90px; padding:10px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.08); color: var(--text-primary);" title="이 경유지(동)에서 진행 부수">
-                    <span style="color: var(--text-secondary); font-size:0.9rem; white-space:nowrap;">부</span>
-                    <button class="btn-remove-waypoint" onclick="removeWaypoint(${waypointCount})">✕</button>
-                </div>
+                <button class="btn-remove-waypoint" onclick="removeWaypoint(${waypointCount})">✕</button>
             `;
             container.appendChild(div);
             const input = div.querySelector('.waypoint-input');
@@ -3270,19 +3191,11 @@ async function searchInterviewer(event) {
             waypointCount = 0;
         }
 
-        // 모든 경유지 가져오기
+        // 모든 경유지 가져오기 (수동 검색 전용 — 주소만)
         function getWaypoints() {
-            return getWaypointsWithBu().map(w => w.address);
-        }
-
-        function getWaypointsWithBu() {
-            return Array.from(document.querySelectorAll('#waypoint-container .waypoint-item'))
-                .map(item => {
-                    const address = item.querySelector('.waypoint-input')?.value?.trim() || '';
-                    const bu = Number(item.querySelector('.waypoint-bu')?.value || 0);
-                    return { address, bu: Number.isFinite(bu) ? bu : 0 };
-                })
-                .filter(w => w.address);
+            return Array.from(document.querySelectorAll('#waypoint-container .waypoint-input'))
+                .map(input => input.value.trim())
+                .filter(v => v);
         }
 
         // -----------------------------
@@ -3734,11 +3647,9 @@ async function searchInterviewer(event) {
             
             const startInput = document.getElementById('start').value.trim();
             const endInput = document.getElementById('end').value.trim();
-            const waypointRows = getWaypointsWithBu();
-            const waypointAddresses = waypointRows.map(w => w.address);
+            const waypoints = getWaypoints();
             const costPerKm = parseFloat(document.getElementById('cost_per_km').value) || 180;
-            const manualTollFee = parseFloat(document.getElementById('toll_fee').value) || 0;
-            const includeRouteToll = document.getElementById('include_route_toll')?.checked ?? true;
+            const tollFee = parseFloat(document.getElementById('toll_fee').value) || 0;
             const mealFee = parseFloat(document.getElementById('meal_fee').value) || 0;
             const otherFee = parseFloat(document.getElementById('other_fee').value) || 0;
             const otherLabel = document.getElementById('other_label').value.trim() || '기타';
@@ -3765,11 +3676,6 @@ async function searchInterviewer(event) {
                 showError('출발지와 도착지를 모두 입력해주세요.');
                 return;
             }
-            if (waypointRows.some(w => !Number.isFinite(w.bu) || w.bu < 0)) {
-                showError('경유지의 부수는 0 이상 숫자여야 합니다.');
-                return;
-            }
-
             btn.classList.add('loading');
             btn.disabled = true;
             errorEl.classList.remove('show');
@@ -3777,7 +3683,7 @@ async function searchInterviewer(event) {
 
             try {
                 // 모든 주소 검색
-                const allAddresses = [startInput, ...waypointAddresses, endInput];
+                const allAddresses = [startInput, ...waypoints, endInput];
                 const coords = await Promise.all(allAddresses.map(addr => searchAddress(addr)));
                 
                 // 경로 탐색
@@ -3791,46 +3697,11 @@ async function searchInterviewer(event) {
                 const segmentDistances = await getSegmentDistances(coords);
                 
                 // 거리 (미터 → km) - 구간별 합계 사용 (각 구간 반올림)
-                const roadKmRounded = segmentDistances.reduce((sum, seg) => sum + Math.round(seg.distance), 0);
-                const estimatedRouteToll = segmentDistances.reduce((sum, seg) => sum + (seg.toll || 0), 0);
-                const appliedEstimatedToll = includeRouteToll ? estimatedRouteToll : 0;
-                const tollFeeTotal = appliedEstimatedToll + manualTollFee;
-
-                // 경유지·도착 동 내부 순회(직선 평균 + 자동 보정은 자동 탭과 동일 옵션 사용)
-                const autoTuneEnabled = document.getElementById('auto_roam_autotune')?.checked ?? true;
-                const manualRoamFactor = Number(document.getElementById('auto_roam_factor')?.value || 0);
-                const endBuParsed = parseInt(String(document.getElementById('trip_count').value || '').trim(), 10);
-                const endBuNum = Number.isFinite(endBuParsed) && endBuParsed > 0 ? endBuParsed : 0;
-
-                const roamTasks = [];
-                waypointRows.forEach(w => {
-                    if (w.bu > 0) roamTasks.push({ addr: w.address, bu: w.bu });
-                });
-                if (endBuNum > 0) roamTasks.push({ addr: endInput, bu: endBuNum });
-
-                if (!autoTuneEnabled && roamTasks.length > 0 && (!Number.isFinite(manualRoamFactor) || manualRoamFactor < 0)) {
-                    throw new Error('동 내부 평균 계수(자동 탭)를 0 이상으로 설정해주세요.');
-                }
-
-                let roamKm = 0;
-                if (roamTasks.length > 0) {
-                    const withD = await Promise.all(roamTasks.map(t =>
-                        getDongDiameterKm(t.addr).then(dKm => ({ ...t, dKm }))
-                    ));
-                    for (const row of withD) {
-                        if (autoTuneEnabled) {
-                            roamKm += autoTuneRoam(row.dKm, row.bu).roamKm;
-                        } else {
-                            roamKm += row.dKm * manualRoamFactor * row.bu;
-                        }
-                    }
-                }
-                const roamKmRounded = Math.round(roamKm);
-                const distanceKm = roadKmRounded + roamKmRounded;
+                const distanceKm = segmentDistances.reduce((sum, seg) => sum + Math.round(seg.distance), 0);
 
                 // 비용 계산 (반올림된 km 기준)
                 const fuelCost = distanceKm * costPerKm;
-                const totalCost = fuelCost + tollFeeTotal + mealFee + otherFee;
+                const totalCost = fuelCost + tollFee + mealFee + otherFee;
 
                 // 경로 표시
                 const routeFlow = document.getElementById('route-flow');
@@ -3853,13 +3724,7 @@ async function searchInterviewer(event) {
                 document.getElementById('result-distance').textContent = Math.round(distanceKm) + ' km';
                 document.getElementById('result-duration').textContent = formatDuration(route.duration);
                 document.getElementById('result-fuel').textContent = Math.round(fuelCost).toLocaleString() + ' 원';
-                const tollLabel = (appliedEstimatedToll > 0 || manualTollFee > 0)
-                    ? `${Math.round(tollFeeTotal).toLocaleString()} 원`
-                    : '0 원';
-                document.getElementById('result-toll').textContent = tollLabel +
-                    (manualTollFee > 0 && appliedEstimatedToll > 0
-                        ? ` (예상 ${Math.round(appliedEstimatedToll).toLocaleString()} + 추가 ${Math.round(manualTollFee).toLocaleString()})`
-                        : (appliedEstimatedToll > 0 ? ' (예상)' : (manualTollFee > 0 ? ' (추가)' : '')));
+                document.getElementById('result-toll').textContent = tollFee.toLocaleString() + ' 원';
                 document.getElementById('result-meal').textContent = mealFee.toLocaleString() + ' 원';
                 document.getElementById('result-other').textContent = otherFee.toLocaleString() + ' 원';
                 document.getElementById('result-other-label').textContent = otherLabel;
@@ -3897,18 +3762,14 @@ async function searchInterviewer(event) {
                     durationText: formatDuration(route.duration),
                     costPerKm: costPerKm,
                     fuelCost: Math.round(fuelCost),
-                    tollFee: Math.round(tollFeeTotal),
-                    estimatedRouteToll: Math.round(appliedEstimatedToll),
-                    manualTollFee: Math.round(manualTollFee),
-                    includeRouteToll: includeRouteToll,
+                    tollFee: tollFee,
                     mealFee: mealFee,
                     otherFee: otherFee,
                     otherLabel: otherLabel,
                     totalCost: Math.round(totalCost),
                     startAddress: startInput,
                     endAddress: endInput,
-                    waypointAddresses: waypointAddresses,
-                    waypointRows: waypointRows
+                    waypointAddresses: waypoints
                 };
 
                 resultsEl.classList.add('show');
@@ -4134,25 +3995,23 @@ async function searchInterviewer(event) {
             const btn = document.getElementById('calculate-auto-btn');
             const resultsWrap = document.getElementById('auto-results');
 
-            const startInput = document.getElementById('start').value.trim();
-            const endInput = document.getElementById('end').value.trim();
-            const baseBuParsed = parseInt(String(document.getElementById('trip_count')?.value || '').trim(), 10);
-            const baseBu = Number.isFinite(baseBuParsed) && baseBuParsed >= 0 ? baseBuParsed : 0;
+            const startInput = document.getElementById('auto_start').value.trim();
+            const endInput = document.getElementById('auto_end').value.trim();
+            const baseBu = Number(document.getElementById('auto_bu').value || 0);
             const autoTuneEnabled = document.getElementById('auto_roam_autotune')?.checked ?? true;
             const manualRoamFactor = Number(document.getElementById('auto_roam_factor').value || 0);
             const returnHome = document.getElementById('auto_return_home')?.checked ?? true;
-            const waypointStops = getWaypointsWithBu();
+            const waypointStops = getAutoWaypointsWithBu();
 
-            const costPerKm = Number(document.getElementById('auto_cost_per_km').value || 180);
-            const manualTollExtra = (Number(document.getElementById('auto_toll_fee').value) || 0)
-                + (Number(document.getElementById('toll_fee').value) || 0);
+            const costPerKm = Number(document.getElementById('cost_per_km').value || 180);
+            const manualTollExtra = Number(document.getElementById('toll_fee').value) || 0;
             const includeRouteToll = document.getElementById('include_route_toll')?.checked ?? true;
-            const mealFee = Number(document.getElementById('auto_meal_fee').value || 0);
-            const otherFee = Number(document.getElementById('auto_other_fee').value || 0);
-            const otherLabel = (document.getElementById('auto_other_label').value.trim() || '기타');
+            const mealFee = Number(document.getElementById('meal_fee').value) || 0;
+            const otherFee = Number(document.getElementById('other_fee').value) || 0;
+            const otherLabel = (document.getElementById('other_label').value.trim() || '기타');
 
             if (!startInput || !endInput) {
-                showAutoError('출발지와 도착지를 모두 입력해주세요.');
+                showAutoError('출발(읍면동)과 도착(읍면동)을 모두 입력해주세요.');
                 return;
             }
             if (!Number.isFinite(baseBu) || baseBu < 0) {
@@ -4255,19 +4114,19 @@ async function searchInterviewer(event) {
 
                 // 엑셀/누적 내보내기용 결과 저장: 기존 포맷에 맞춰 lastCalculationResult 세팅
                 const today = new Date();
-                const tripMonth = parseInt((document.getElementById('auto_trip_month')?.value || document.getElementById('trip_month')?.value)) || (today.getMonth() + 1);
-                const tripDay = parseInt((document.getElementById('auto_trip_day')?.value || document.getElementById('trip_day')?.value)) || today.getDate();
+                const tripMonth = parseInt(document.getElementById('trip_month').value) || (today.getMonth() + 1);
+                const tripDay = parseInt(document.getElementById('trip_day').value) || today.getDate();
                 const tripDateText = `${tripMonth}월 ${tripDay}일`;
-                const tripCount = (document.getElementById('auto_trip_count')?.value || document.getElementById('trip_count')?.value || '').trim();
-                const transportMethod = (document.getElementById('auto_transport_method')?.value || document.getElementById('transport_method')?.value || '').trim();
-                const tripPurpose = (document.getElementById('auto_trip_purpose')?.value || document.getElementById('trip_purpose')?.value || '').trim();
-                const projectNum1 = (document.getElementById('auto_project_num1')?.value || document.getElementById('project_num1')?.value || '').trim();
-                const projectNum2 = (document.getElementById('auto_project_num2')?.value || document.getElementById('project_num2')?.value || '').trim();
-                const projectNum3 = (document.getElementById('auto_project_num3')?.value || document.getElementById('project_num3')?.value || '').trim();
+                const tripCount = (document.getElementById('trip_count').value || '').trim();
+                const transportMethod = (document.getElementById('transport_method').value || '').trim();
+                const tripPurpose = (document.getElementById('trip_purpose').value || '').trim();
+                const projectNum1 = (document.getElementById('project_num1').value || '').trim();
+                const projectNum2 = (document.getElementById('project_num2').value || '').trim();
+                const projectNum3 = (document.getElementById('project_num3').value || '').trim();
                 const projectNumber = (projectNum1 || projectNum2 || projectNum3)
                     ? `${projectNum1 || '0000'}-${projectNum2 || '00'}-${projectNum3 || '0000'}`
                     : '';
-                const projectName = (document.getElementById('auto_project_name')?.value || document.getElementById('project_name')?.value || '').trim();
+                const projectName = (document.getElementById('project_name').value || '').trim();
 
                 // duration은 현재 탭2에서 별도 합산하지 않으므로 0/빈값 처리 (엑셀은 주로 거리/비용 사용)
                 lastCalculationResult = {
@@ -5244,8 +5103,6 @@ async function searchInterviewer(event) {
             const today = new Date();
             document.getElementById('trip_month').value = today.getMonth() + 1;
             document.getElementById('trip_day').value = today.getDate();
-            if (document.getElementById('auto_trip_month')) document.getElementById('auto_trip_month').value = today.getMonth() + 1;
-            if (document.getElementById('auto_trip_day')) document.getElementById('auto_trip_day').value = today.getDate();
             loadBaseLists();
             onAutoTuneToggle();
         });
