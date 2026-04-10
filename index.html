@@ -566,7 +566,7 @@
             flex: 1;
         }
 
-        .waypoint-item input {
+        .waypoint-item .waypoint-input-wrapper input {
             width: 100%;
             padding: 15px 20px;
             background: rgba(255, 255, 255, 0.08);
@@ -577,7 +577,7 @@
             font-family: inherit;
         }
 
-        .waypoint-item input:focus {
+        .waypoint-item .waypoint-input-wrapper input:focus {
             outline: none;
             border-color: var(--accent-yellow);
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
@@ -1954,10 +1954,6 @@
 
             <div class="waypoint-container" id="waypoint-container"></div>
             
-            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
-                <span style="color: var(--text-secondary); font-size: 0.85rem; white-space: nowrap;">반복 단어</span>
-                <input type="text" id="waypoint-prefix" placeholder="예: CU, GS25" style="flex: 1; padding: 8px 12px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 8px; color: var(--text-primary); font-size: 0.9rem;">
-            </div>
             <div style="display: flex; gap: 10px; align-items: center;">
                 <button class="btn-add-waypoint" onclick="addWaypoint()">
                     <span>➕</span> 경유지 추가
@@ -1966,6 +1962,9 @@
                     <span>🗑️</span> 전체 삭제
                 </button>
             </div>
+            <p style="margin-top: 10px; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.45;">
+                경유지마다 <b>몇 부</b>를 넣으면 해당 지역(동) 안 순회 거리에 반영됩니다. 도착 동 부수는 아래 날짜 칸의 <b>도착 동 진행 부수</b>를 사용합니다. 동 내부 자동 보정은 <b>읍면동 자동</b> 탭의 옵션과 같습니다.
+            </p>
 
             <div class="input-group" style="margin-top: 20px;">
                 <label for="end">도착지 <span style="color: var(--accent-magenta); font-size: 0.8rem;">(👤 면접원 검색으로 자동 입력 가능)</span></label>
@@ -1987,7 +1986,7 @@
                         </div>
                     </div>
                     <div class="meta-field">
-                        <label class="meta-label" for="trip_count">진행 부수</label>
+                        <label class="meta-label" for="trip_count">도착 동 진행 부수</label>
                         <div class="date-input-wrapper">
                             <input type="text" id="trip_count" value="" placeholder="부수" maxlength="4">
                             <span class="date-sep">부</span>
@@ -2033,9 +2032,16 @@
                 </div>
                 <div class="cost-item-large">
                     <label for="toll_fee">🛣️ 통행료</label>
-                    <div class="cost-input-wrapper-large">
-                        <input type="number" id="toll_fee" value="0" min="0" step="100">
-                        <span class="unit">원</span>
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:0.9rem; color: var(--text-secondary);">
+                            <input type="checkbox" id="include_route_toll" checked style="width:18px; height:18px;">
+                            <span>예상 통행료 반영 (추천 경로·구간 합산)</span>
+                        </label>
+                        <div class="cost-input-wrapper-large">
+                            <input type="number" id="toll_fee" value="0" min="0" step="100" title="영수증 등 추가 통행료">
+                            <span class="unit">원</span>
+                        </div>
+                        <span style="font-size:0.78rem; color: var(--text-secondary);">예상액은 길찾기 API 요금 합계이며, 아래 입력은 추가로 더합니다.</span>
                     </div>
                 </div>
                 <div class="cost-item-large">
@@ -2196,27 +2202,11 @@
         <div class="tab-panel" id="tab-auto" role="tabpanel" aria-labelledby="tab-btn-auto">
             <div class="card">
                 <h2 class="card-title"><span class="icon">🗺️</span> 읍면동 자동 계산</h2>
-                <div class="mini-grid">
-                    <div class="input-group">
-                        <label for="auto_start">출발(읍/면/동)</label>
-                        <input type="text" id="auto_start" placeholder="예: 부산 연제구 연산동">
-                    </div>
-                    <div class="input-group">
-                        <label for="auto_end">도착(읍/면/동)</label>
-                        <input type="text" id="auto_end" placeholder="예: 창원 진해구 여좌동">
-                    </div>
+                <div class="hint-box" style="margin-bottom: 12px;">
+                    <b>출발지·도착지·경유지(몇 부)</b>는 위 <b>경로 설정</b>과 동일합니다. 이 탭에서는 동 내부 순회 옵션만 조정합니다.
                 </div>
 
                 <div style="margin-top: 10px;">
-                    <div class="auto-waypoint-actions">
-                        <button class="btn-add-waypoint" type="button" onclick="addAutoWaypoint()">
-                            <span>➕</span> 경유지(동) 추가
-                        </button>
-                        <button class="btn-clear-auto" type="button" onclick="clearAllAutoWaypoints()">
-                            <span>🗑️</span> 전체 삭제
-                        </button>
-                    </div>
-                    <div id="auto-waypoint-container"></div>
                     <div style="margin-top:10px; display:flex; align-items:center; gap:10px; color: var(--text-secondary); font-size:0.95rem;">
                         <input type="checkbox" id="auto_return_home" checked>
                         <label for="auto_return_home" style="cursor:pointer;">도착 후 집(출발지)으로 돌아오기</label>
@@ -2225,8 +2215,8 @@
 
                 <div class="mini-grid" style="margin-top: 6px;">
                     <div class="input-group">
-                        <label for="auto_bu">진행 부수(기본값)</label>
-                        <input type="number" id="auto_bu" value="10" min="0" step="1">
+                        <label>도착 동 부수</label>
+                        <div style="color: var(--text-secondary); font-size:0.92rem; line-height:1.4;">위 날짜 카드의 <b>도착 동 진행 부수</b>를 사용합니다.</div>
                     </div>
                     <div class="input-group">
                         <label for="auto_roam_factor">동 내부 평균 계수</label>
@@ -2310,7 +2300,8 @@
                         </div>
                     </div>
                     <div class="cost-item-large">
-                        <label for="auto_toll_fee">🛣️ 통행료</label>
+                        <label for="auto_toll_fee">🛣️ 통행료(추가 입력)</label>
+                        <p style="font-size:0.78rem; color: var(--text-secondary); margin: 0 0 8px;">예상 통행료 반영 ON/OFF는 위쪽 비용 설정의 체크박스와 같습니다.</p>
                         <div class="cost-input-wrapper-large">
                             <input type="number" id="auto_toll_fee" value="0" min="0" step="100">
                             <span class="unit">원</span>
@@ -3119,25 +3110,23 @@ async function searchInterviewer(event) {
         function addWaypoint() {
             waypointCount++;
             const container = document.getElementById('waypoint-container');
-            const prefix = document.getElementById('waypoint-prefix')?.value?.trim() || '';
             const div = document.createElement('div');
             div.className = 'waypoint-item';
             div.id = `waypoint-${waypointCount}`;
             div.innerHTML = `
                 <div class="waypoint-input-wrapper">
-                    <input type="text" placeholder="경유지 ${waypointCount}" class="waypoint-input" autocomplete="off" value="${prefix ? prefix + ' ' : ''}">
+                    <input type="text" placeholder="경유지 ${waypointCount}" class="waypoint-input" autocomplete="off">
                     <div class="waypoint-suggestions"></div>
                 </div>
-                <button class="btn-remove-waypoint" onclick="removeWaypoint(${waypointCount})">✕</button>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="number" class="waypoint-bu" value="0" min="0" step="1" style="width:90px; padding:10px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.08); color: var(--text-primary);" title="이 경유지(동)에서 진행 부수">
+                    <span style="color: var(--text-secondary); font-size:0.9rem; white-space:nowrap;">부</span>
+                    <button class="btn-remove-waypoint" onclick="removeWaypoint(${waypointCount})">✕</button>
+                </div>
             `;
             container.appendChild(div);
             const input = div.querySelector('.waypoint-input');
             attachWaypointAutocomplete(input);
-            // 반복 단어가 있으면 커서를 끝으로 이동하고 포커스
-            if (prefix) {
-                input.focus();
-                input.setSelectionRange(input.value.length, input.value.length);
-            }
         }
 
         // 자동완성에서 선택한 장소의 좌표를 저장하는 캐시
@@ -3283,9 +3272,17 @@ async function searchInterviewer(event) {
 
         // 모든 경유지 가져오기
         function getWaypoints() {
-            return Array.from(document.querySelectorAll('.waypoint-input'))
-                .map(input => input.value.trim())
-                .filter(v => v);
+            return getWaypointsWithBu().map(w => w.address);
+        }
+
+        function getWaypointsWithBu() {
+            return Array.from(document.querySelectorAll('#waypoint-container .waypoint-item'))
+                .map(item => {
+                    const address = item.querySelector('.waypoint-input')?.value?.trim() || '';
+                    const bu = Number(item.querySelector('.waypoint-bu')?.value || 0);
+                    return { address, bu: Number.isFinite(bu) ? bu : 0 };
+                })
+                .filter(w => w.address);
         }
 
         // -----------------------------
@@ -3555,7 +3552,7 @@ async function searchInterviewer(event) {
 
         // 카카오 모빌리티 API로 단일 구간 경로 탐색 (경유지 최대 5개)
         async function getRouteSingle(origin, destination, waypoints = []) {
-            let url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${origin.x},${origin.y}&destination=${destination.x},${destination.y}`;
+            let url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${origin.x},${origin.y}&destination=${destination.x},${destination.y}&priority=RECOMMEND`;
             
             if (waypoints.length > 0) {
                 const waypointStr = waypoints.map(w => `${w.x},${w.y}`).join('|');
@@ -3587,9 +3584,11 @@ async function searchInterviewer(event) {
                     throw new Error(route.result_msg || `경로를 찾을 수 없습니다 (코드: ${route.result_code})`);
                 }
                 
+                const toll = route.summary?.fare?.toll;
                 return {
                     distance: route.summary.distance, // 미터
-                    duration: route.summary.duration  // 초
+                    duration: route.summary.duration,  // 초
+                    toll: Number(toll) || 0 // 원 (해당 구간/경로 기준 예상 통행료)
                 };
             }
             
@@ -3610,7 +3609,8 @@ async function searchInterviewer(event) {
                         from: origin.roadAddress || origin.name,  // 도로명 주소 우선
                         to: destination.roadAddress || destination.name,  // 도로명 주소 우선
                         distance: route.distance / 1000, // km로 변환
-                        duration: route.duration
+                        duration: route.duration,
+                        toll: route.toll || 0
                     });
                 } catch (error) {
                     console.error(`구간 ${origin.name} → ${destination.name} 거리 계산 실패:`, error);
@@ -3618,7 +3618,8 @@ async function searchInterviewer(event) {
                         from: origin.roadAddress || origin.name,
                         to: destination.roadAddress || destination.name,
                         distance: 0,
-                        duration: 0
+                        duration: 0,
+                        toll: 0
                     });
                 }
             }
@@ -3638,6 +3639,7 @@ async function searchInterviewer(event) {
             // 경유지가 5개 초과 시 여러 구간으로 분할하여 호출
             let totalDistance = 0;
             let totalDuration = 0;
+            let totalToll = 0;
             
             // 전체 포인트 배열: 출발지 + 경유지들 + 도착지
             const allPoints = [origin, ...waypoints, destination];
@@ -3669,6 +3671,7 @@ async function searchInterviewer(event) {
                 
                 totalDistance += segmentRoute.distance;
                 totalDuration += segmentRoute.duration;
+                totalToll += segmentRoute.toll || 0;
                 
                 // 다음 구간 시작점 (현재 도착지가 다음 출발지)
                 currentIndex = maxEndIndex;
@@ -3678,7 +3681,8 @@ async function searchInterviewer(event) {
             
             return {
                 distance: totalDistance,
-                duration: totalDuration
+                duration: totalDuration,
+                toll: totalToll
             };
         }
 
@@ -3730,9 +3734,11 @@ async function searchInterviewer(event) {
             
             const startInput = document.getElementById('start').value.trim();
             const endInput = document.getElementById('end').value.trim();
-            const waypoints = getWaypoints();
+            const waypointRows = getWaypointsWithBu();
+            const waypointAddresses = waypointRows.map(w => w.address);
             const costPerKm = parseFloat(document.getElementById('cost_per_km').value) || 180;
-            const tollFee = parseFloat(document.getElementById('toll_fee').value) || 0;
+            const manualTollFee = parseFloat(document.getElementById('toll_fee').value) || 0;
+            const includeRouteToll = document.getElementById('include_route_toll')?.checked ?? true;
             const mealFee = parseFloat(document.getElementById('meal_fee').value) || 0;
             const otherFee = parseFloat(document.getElementById('other_fee').value) || 0;
             const otherLabel = document.getElementById('other_label').value.trim() || '기타';
@@ -3759,6 +3765,10 @@ async function searchInterviewer(event) {
                 showError('출발지와 도착지를 모두 입력해주세요.');
                 return;
             }
+            if (waypointRows.some(w => !Number.isFinite(w.bu) || w.bu < 0)) {
+                showError('경유지의 부수는 0 이상 숫자여야 합니다.');
+                return;
+            }
 
             btn.classList.add('loading');
             btn.disabled = true;
@@ -3767,7 +3777,7 @@ async function searchInterviewer(event) {
 
             try {
                 // 모든 주소 검색
-                const allAddresses = [startInput, ...waypoints, endInput];
+                const allAddresses = [startInput, ...waypointAddresses, endInput];
                 const coords = await Promise.all(allAddresses.map(addr => searchAddress(addr)));
                 
                 // 경로 탐색
@@ -3781,11 +3791,46 @@ async function searchInterviewer(event) {
                 const segmentDistances = await getSegmentDistances(coords);
                 
                 // 거리 (미터 → km) - 구간별 합계 사용 (각 구간 반올림)
-                const distanceKm = segmentDistances.reduce((sum, seg) => sum + Math.round(seg.distance), 0);
+                const roadKmRounded = segmentDistances.reduce((sum, seg) => sum + Math.round(seg.distance), 0);
+                const estimatedRouteToll = segmentDistances.reduce((sum, seg) => sum + (seg.toll || 0), 0);
+                const appliedEstimatedToll = includeRouteToll ? estimatedRouteToll : 0;
+                const tollFeeTotal = appliedEstimatedToll + manualTollFee;
+
+                // 경유지·도착 동 내부 순회(직선 평균 + 자동 보정은 자동 탭과 동일 옵션 사용)
+                const autoTuneEnabled = document.getElementById('auto_roam_autotune')?.checked ?? true;
+                const manualRoamFactor = Number(document.getElementById('auto_roam_factor')?.value || 0);
+                const endBuParsed = parseInt(String(document.getElementById('trip_count').value || '').trim(), 10);
+                const endBuNum = Number.isFinite(endBuParsed) && endBuParsed > 0 ? endBuParsed : 0;
+
+                const roamTasks = [];
+                waypointRows.forEach(w => {
+                    if (w.bu > 0) roamTasks.push({ addr: w.address, bu: w.bu });
+                });
+                if (endBuNum > 0) roamTasks.push({ addr: endInput, bu: endBuNum });
+
+                if (!autoTuneEnabled && roamTasks.length > 0 && (!Number.isFinite(manualRoamFactor) || manualRoamFactor < 0)) {
+                    throw new Error('동 내부 평균 계수(자동 탭)를 0 이상으로 설정해주세요.');
+                }
+
+                let roamKm = 0;
+                if (roamTasks.length > 0) {
+                    const withD = await Promise.all(roamTasks.map(t =>
+                        getDongDiameterKm(t.addr).then(dKm => ({ ...t, dKm }))
+                    ));
+                    for (const row of withD) {
+                        if (autoTuneEnabled) {
+                            roamKm += autoTuneRoam(row.dKm, row.bu).roamKm;
+                        } else {
+                            roamKm += row.dKm * manualRoamFactor * row.bu;
+                        }
+                    }
+                }
+                const roamKmRounded = Math.round(roamKm);
+                const distanceKm = roadKmRounded + roamKmRounded;
 
                 // 비용 계산 (반올림된 km 기준)
                 const fuelCost = distanceKm * costPerKm;
-                const totalCost = fuelCost + tollFee + mealFee + otherFee;
+                const totalCost = fuelCost + tollFeeTotal + mealFee + otherFee;
 
                 // 경로 표시
                 const routeFlow = document.getElementById('route-flow');
@@ -3808,7 +3853,13 @@ async function searchInterviewer(event) {
                 document.getElementById('result-distance').textContent = Math.round(distanceKm) + ' km';
                 document.getElementById('result-duration').textContent = formatDuration(route.duration);
                 document.getElementById('result-fuel').textContent = Math.round(fuelCost).toLocaleString() + ' 원';
-                document.getElementById('result-toll').textContent = tollFee.toLocaleString() + ' 원';
+                const tollLabel = (appliedEstimatedToll > 0 || manualTollFee > 0)
+                    ? `${Math.round(tollFeeTotal).toLocaleString()} 원`
+                    : '0 원';
+                document.getElementById('result-toll').textContent = tollLabel +
+                    (manualTollFee > 0 && appliedEstimatedToll > 0
+                        ? ` (예상 ${Math.round(appliedEstimatedToll).toLocaleString()} + 추가 ${Math.round(manualTollFee).toLocaleString()})`
+                        : (appliedEstimatedToll > 0 ? ' (예상)' : (manualTollFee > 0 ? ' (추가)' : '')));
                 document.getElementById('result-meal').textContent = mealFee.toLocaleString() + ' 원';
                 document.getElementById('result-other').textContent = otherFee.toLocaleString() + ' 원';
                 document.getElementById('result-other-label').textContent = otherLabel;
@@ -3846,14 +3897,18 @@ async function searchInterviewer(event) {
                     durationText: formatDuration(route.duration),
                     costPerKm: costPerKm,
                     fuelCost: Math.round(fuelCost),
-                    tollFee: tollFee,
+                    tollFee: Math.round(tollFeeTotal),
+                    estimatedRouteToll: Math.round(appliedEstimatedToll),
+                    manualTollFee: Math.round(manualTollFee),
+                    includeRouteToll: includeRouteToll,
                     mealFee: mealFee,
                     otherFee: otherFee,
                     otherLabel: otherLabel,
                     totalCost: Math.round(totalCost),
                     startAddress: startInput,
                     endAddress: endInput,
-                    waypointAddresses: waypoints
+                    waypointAddresses: waypointAddresses,
+                    waypointRows: waypointRows
                 };
 
                 resultsEl.classList.add('show');
@@ -4079,26 +4134,29 @@ async function searchInterviewer(event) {
             const btn = document.getElementById('calculate-auto-btn');
             const resultsWrap = document.getElementById('auto-results');
 
-            const startInput = document.getElementById('auto_start').value.trim();
-            const endInput = document.getElementById('auto_end').value.trim();
-            const baseBu = Number(document.getElementById('auto_bu').value || 0);
+            const startInput = document.getElementById('start').value.trim();
+            const endInput = document.getElementById('end').value.trim();
+            const baseBuParsed = parseInt(String(document.getElementById('trip_count')?.value || '').trim(), 10);
+            const baseBu = Number.isFinite(baseBuParsed) && baseBuParsed >= 0 ? baseBuParsed : 0;
             const autoTuneEnabled = document.getElementById('auto_roam_autotune')?.checked ?? true;
             const manualRoamFactor = Number(document.getElementById('auto_roam_factor').value || 0);
             const returnHome = document.getElementById('auto_return_home')?.checked ?? true;
-            const waypointStops = getAutoWaypointsWithBu(); // [{address, bu}, ...]
+            const waypointStops = getWaypointsWithBu();
 
             const costPerKm = Number(document.getElementById('auto_cost_per_km').value || 180);
-            const tollFee = Number(document.getElementById('auto_toll_fee').value || 0);
+            const manualTollExtra = (Number(document.getElementById('auto_toll_fee').value) || 0)
+                + (Number(document.getElementById('toll_fee').value) || 0);
+            const includeRouteToll = document.getElementById('include_route_toll')?.checked ?? true;
             const mealFee = Number(document.getElementById('auto_meal_fee').value || 0);
             const otherFee = Number(document.getElementById('auto_other_fee').value || 0);
             const otherLabel = (document.getElementById('auto_other_label').value.trim() || '기타');
 
             if (!startInput || !endInput) {
-                showAutoError('출발(읍면동)과 도착(읍면동)을 모두 입력해주세요.');
+                showAutoError('출발지와 도착지를 모두 입력해주세요.');
                 return;
             }
             if (!Number.isFinite(baseBu) || baseBu < 0) {
-                showAutoError('진행 부수(기본값)는 0 이상 숫자여야 합니다.');
+                showAutoError('도착 동 진행 부수는 0 이상 숫자여야 합니다.');
                 return;
             }
             if (!autoTuneEnabled && (!Number.isFinite(manualRoamFactor) || manualRoamFactor < 0)) {
@@ -4129,6 +4187,9 @@ async function searchInterviewer(event) {
                 // 2) 도로거리(이동): 기존 로직 그대로 사용 (구간별 호출)
                 const segmentDistances = await getSegmentDistances(coords);
                 const roadKm = segmentDistances.reduce((sum, seg) => sum + Math.round(seg.distance), 0);
+                const estimatedRouteToll = segmentDistances.reduce((sum, seg) => sum + (seg.toll || 0), 0);
+                const appliedEstimatedToll = includeRouteToll ? estimatedRouteToll : 0;
+                const tollFeeTotal = appliedEstimatedToll + manualTollExtra;
 
                 // 3) 방문 동 내부 순회(직선 평균): 경유 동 + 최종 도착 동을 대상으로, 각각 부수만큼 계산
                 const roamStops = [
@@ -4155,7 +4216,7 @@ async function searchInterviewer(event) {
                 const totalKm = roadKm + roamKmSum;
 
                 const fuelCost = totalKm * costPerKm;
-                const totalCost = fuelCost + tollFee + mealFee + otherFee;
+                const totalCost = fuelCost + tollFeeTotal + mealFee + otherFee;
 
                 // UI 렌더
                 const flow = document.getElementById('auto-route-flow');
@@ -4183,7 +4244,10 @@ async function searchInterviewer(event) {
                 document.getElementById('auto-total-km').textContent = `${totalKm.toFixed(2)} km`;
 
                 document.getElementById('auto-fuel').textContent = Math.round(fuelCost).toLocaleString() + ' 원';
-                document.getElementById('auto-toll').textContent = tollFee.toLocaleString() + ' 원';
+                document.getElementById('auto-toll').textContent = Math.round(tollFeeTotal).toLocaleString() + ' 원' +
+                    (manualTollExtra > 0 && appliedEstimatedToll > 0
+                        ? ` (예상 ${Math.round(appliedEstimatedToll).toLocaleString()} + 추가 ${Math.round(manualTollExtra).toLocaleString()})`
+                        : (appliedEstimatedToll > 0 ? ' (예상)' : (manualTollExtra > 0 ? ' (추가)' : '')));
                 document.getElementById('auto-meal').textContent = mealFee.toLocaleString() + ' 원';
                 document.getElementById('auto-other').textContent = otherFee.toLocaleString() + ' 원';
                 document.getElementById('auto-other-label-out').textContent = otherLabel;
@@ -4222,7 +4286,10 @@ async function searchInterviewer(event) {
                     durationText: '',
                     costPerKm: costPerKm,
                     fuelCost: Math.round(fuelCost),
-                    tollFee: tollFee,
+                    tollFee: Math.round(tollFeeTotal),
+                    estimatedRouteToll: Math.round(appliedEstimatedToll),
+                    manualTollFee: Math.round(manualTollExtra),
+                    includeRouteToll: includeRouteToll,
                     mealFee: mealFee,
                     otherFee: otherFee,
                     otherLabel: otherLabel,
