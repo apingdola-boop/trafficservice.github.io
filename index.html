@@ -2028,7 +2028,7 @@
                 🧭 수동 검색(도로 기반)
             </button>
             <button class="top-tab-btn" id="tab-btn-auto" type="button" role="tab" aria-selected="false" aria-controls="tab-auto-route" onclick="setActiveTopTab('auto')">
-                🗺️ 자동 검색(동 내부 직선)
+                🗺️ 자동 검색(동 내부 순회)
             </button>
         </div>
 
@@ -2089,33 +2089,38 @@
                     </button>
                 </div>
                 <div id="auto-waypoint-container"></div>
-                <div class="input-group" style="margin-top: 12px;">
-                    <label for="auto_roam_factor">동 내부 평균 계수 <span style="font-weight:400; color: var(--text-secondary); font-size:0.85rem;">(순회 거리에 곱함)</span></label>
-                    <input type="number" id="auto_roam_factor" value="0.6" min="0" max="2" step="0.1">
-                    <div style="margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; color: var(--text-secondary); font-size:0.9rem;">
-                        <input type="checkbox" id="auto_roam_autotune" checked onchange="onAutoTuneToggle()">
-                        <label for="auto_roam_autotune" style="cursor:pointer;">자동 보정 (지역·부수 기반으로 계수 대신 사용)</label>
+                <details id="auto-advanced-options" style="margin-top: 12px; border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; background: rgba(255,255,255,0.04); padding: 10px 12px;">
+                    <summary style="cursor:pointer; color: var(--text-secondary); font-size: 0.92rem; user-select:none;">
+                        고급 옵션(기본 숨김) 펼치기
+                    </summary>
+                    <div class="input-group" style="margin-top: 12px;">
+                        <label for="auto_roam_factor">동 내부 평균 계수 <span style="font-weight:400; color: var(--text-secondary); font-size:0.85rem;">(순회 거리에 곱함)</span></label>
+                        <input type="number" id="auto_roam_factor" value="0.6" min="0" max="2" step="0.1">
+                        <div style="margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; color: var(--text-secondary); font-size:0.9rem;">
+                            <input type="checkbox" id="auto_roam_autotune" checked onchange="onAutoTuneToggle()">
+                            <label for="auto_roam_autotune" style="cursor:pointer;">자동 보정 (지역·부수 기반으로 계수 대신 사용)</label>
+                        </div>
+                        <div style="margin-top:10px; display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; color: var(--text-secondary); font-size:0.9rem; line-height:1.45;">
+                            <input type="checkbox" id="auto_roam_road_sample" checked onchange="onAutoRoadSampleToggle()" style="width:18px; height:18px; flex-shrink:0; margin-top:2px;">
+                            <label for="auto_roam_road_sample" style="cursor:pointer;"><b>동 내부: 도로 샘플</b> (부수만큼 동 중심 주변 장소를 잇는 실제 도로 km — 카카오 호출 증가)</label>
+                        </div>
+                        <p id="auto_road_sample_note" style="font-size:0.78rem; color: var(--text-secondary); margin-top:6px; line-height:1.45;">켜면 순회 모델 대신 샘플링을 씁니다. 끄면 아래 <b>동 내부 평균 계수·자동 보정</b> 순회식을 씁니다.</p>
                     </div>
-                    <div style="margin-top:10px; display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; color: var(--text-secondary); font-size:0.9rem; line-height:1.45;">
-                        <input type="checkbox" id="auto_roam_road_sample" checked onchange="onAutoRoadSampleToggle()" style="width:18px; height:18px; flex-shrink:0; margin-top:2px;">
-                        <label for="auto_roam_road_sample" style="cursor:pointer;"><b>동 내부: 도로 샘플</b> (부수만큼 동 중심 주변 장소를 잇는 실제 도로 km — 카카오 호출 증가)</label>
+                    <div class="input-group" style="margin-top: 14px;">
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:0.95rem;">
+                            <input type="checkbox" id="include_route_toll" style="width:18px; height:18px;">
+                            <span>API 예상 통행료까지 합산 (선택)</span>
+                        </label>
+                        <p style="font-size:0.8rem; color: var(--text-secondary); margin-top:8px; line-height:1.45;">기본은 <b>예상 통행료를 넣지 않습니다</b>. 아래 공통 카드에 <b>통행료</b>를 직접 적은 금액만 합산합니다. 이 체크를 켜면 카카오 경로 API 예상액 + 입력 통행료가 함께 들어갑니다.</p>
                     </div>
-                    <p id="auto_road_sample_note" style="font-size:0.78rem; color: var(--text-secondary); margin-top:6px; line-height:1.45;">켜면 순회 모델 대신 샘플링을 씁니다. 끄면 아래 <b>동 내부 평균 계수·자동 보정</b> 순회식을 씁니다.</p>
-                </div>
-                <div class="input-group" style="margin-top: 14px;">
-                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:0.95rem;">
-                        <input type="checkbox" id="include_route_toll" style="width:18px; height:18px;">
-                        <span>API 예상 통행료까지 합산 (선택)</span>
-                    </label>
-                    <p style="font-size:0.8rem; color: var(--text-secondary); margin-top:8px; line-height:1.45;">기본은 <b>예상 통행료를 넣지 않습니다</b>. 아래 공통 카드에 <b>통행료</b>를 직접 적은 금액만 합산합니다. 이 체크를 켜면 카카오 경로 API 예상액 + 입력 통행료가 함께 들어갑니다.</p>
-                </div>
-                <div class="hint-box" style="margin-top: 12px;">
-                    - 도로 거리는 <b>출발 → 경유(순서대로) → 도착</b> 구간을 이어 합니다. (마지막 경유지→도착지 포함)<br>
-                    - <b>동 내부: 도로 샘플</b> 켬: 부수(최대 10)만큼 인근 장소를 골라 <b>도로만</b> 이어 합산합니다. 샘플이 부족한 동만 순회식을 일부 더합니다.<br>
-                    - 도로 샘플 끔: <b>경유 동</b> 옆 <b>부</b>에 대해 OSM 지름·순회 모델을 더합니다. (0부면 순회 제외)<br>
-                    - OpenStreetMap에서 동 경계를 못 찾으면 <b>지름 약 2.4km 추정</b>으로 순회식에 반영합니다.<br>
-                    - 동 경계는 OpenStreetMap 검색을 쓰므로 <b>시·구·동</b>을 함께 적는 것이 잘 맞습니다.
-                </div>
+                    <div class="hint-box" style="margin-top: 12px;">
+                        - 도로 거리는 <b>출발 → 경유(순서대로) → 도착</b> 구간을 이어 합니다. (마지막 경유지→도착지 포함)<br>
+                        - <b>동 내부: 도로 샘플</b> 켬: 부수(최대 10)만큼 인근 장소를 골라 <b>도로만</b> 이어 합산합니다. 샘플이 부족한 동만 순회식을 일부 더합니다.<br>
+                        - 도로 샘플 끔: <b>경유 동</b> 옆 <b>부</b>에 대해 OSM 지름·순회 모델을 더합니다. (0부면 순회 제외)<br>
+                        - OpenStreetMap에서 동 경계를 못 찾으면 <b>지름 약 2.4km 추정</b>으로 순회식에 반영합니다.<br>
+                        - 동 경계는 OpenStreetMap 검색을 쓰므로 <b>시·구·동</b>을 함께 적는 것이 잘 맞습니다.
+                    </div>
+                </details>
             </div>
         </div>
 
@@ -2243,7 +2248,7 @@
 
         <button class="btn btn-primary" id="calculate-btn" onclick="calculate()">
             <span class="spinner"></span>
-            <span class="btn-text">거리 & 유류비 계산하기</span>
+            <span class="btn-text">계산하기</span>
         </button>
 
         <div class="results" id="results">
@@ -2318,7 +2323,7 @@
 
             <button class="btn btn-primary" id="calculate-auto-btn" onclick="calculateAutoDong()">
                 <span class="spinner"></span>
-                <span class="btn-text">자동 검색 계산하기</span>
+                <span class="btn-text">계산하기</span>
             </button>
 
             <div class="results" id="auto-results" style="display:none;">
@@ -2496,6 +2501,27 @@
                 return normalized;
             }
             return address;
+        }
+
+        // 자동 검색 입력칸에서는 동/면/읍/리 수준까지만 보이도록 축약
+        function simplifyAddressForAutoView(address) {
+            if (!address || typeof address !== 'string') return address;
+            const compact = address.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+            if (!compact) return address;
+
+            const parts = compact.split(' ');
+            const dongIdx = parts.findIndex((token) => /(?:읍|면|동|리)$/.test(token));
+            if (dongIdx < 0) return compact;
+
+            const startIdx = Math.max(0, dongIdx - 2);
+            return parts.slice(startIdx, dongIdx + 1).join(' ');
+        }
+
+        function isAutoAddressInput(inputEl) {
+            if (!inputEl) return false;
+            return inputEl.id === 'auto_start'
+                || inputEl.id === 'auto_end'
+                || inputEl.classList?.contains('auto-waypoint-input');
         }
         
         // 면접원 데이터 (2024년 12월 최신화 - 123명)
@@ -3137,7 +3163,7 @@ async function searchInterviewer(event) {
 
             if (!input) return;
 
-            input.value = address;
+            input.value = useAuto ? simplifyAddressForAutoView(address) : address;
             input.classList.add(type === 'start' ? 'filled-start' : 'filled-end');
             
             // 면접원 정보 저장
@@ -3353,20 +3379,23 @@ async function searchInterviewer(event) {
             }
 
             suggestions.forEach(item => {
+                const displayLabel = isAutoAddressInput(inputEl)
+                    ? simplifyAddressForAutoView(item.label)
+                    : item.label;
                 const option = document.createElement('div');
                 option.className = 'waypoint-suggestion';
-                option.textContent = item.label;
+                option.textContent = displayLabel;
                 option.addEventListener('mousedown', (event) => {
                     event.preventDefault();
-                    inputEl.value = item.label;
+                    inputEl.value = displayLabel;
                     if (item.x && item.y) {
                         const entry = {
-                            name: item.label,
+                            name: displayLabel,
                             roadAddress: item.roadAddress,
                             x: item.x,
                             y: item.y
                         };
-                        cacheWaypointPlaceKeys(item.label, entry);
+                        cacheWaypointPlaceKeys(displayLabel, entry);
                     }
                     listEl.style.display = 'none';
                 });
