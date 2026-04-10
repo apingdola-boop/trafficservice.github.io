@@ -23,6 +23,15 @@
         const SUPABASE_URL = 'https://fzuqztunicnptqqnuruv.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6dXF6dHVuaWNucHRxcW51cnV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU0MzUzNDYsImV4cCI6MjA4MTAxMTM0Nn0.xiihKzb6I6t1cTyekLzYr1CGEIHrP6Bxm_nG9Uue6c8';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        /** H-채팅이 iframe/새 탭 URL에 붙인 origin — 모바일에서 referrer·opener 없을 때 postMessage 대상 */
+        try {
+            var _ccParams = new URLSearchParams(window.location.search);
+            var _ccO = _ccParams.get('ccOrigin');
+            if (_ccO && String(_ccO).trim()) {
+                var _dec = decodeURIComponent(String(_ccO).trim());
+                if (/^https?:\/\//i.test(_dec)) window.COMPANYCHAT_TARGET_ORIGIN = _dec.replace(/\/+$/, '');
+            }
+        } catch (e) {}
     </script>
     <style>
         :root {
@@ -5229,6 +5238,14 @@ async function searchInterviewer(event) {
                 }
             } catch (e) {}
             try {
+                var _p = new URLSearchParams(window.location.search);
+                var _q = _p.get('ccOrigin');
+                if (_q && String(_q).trim()) {
+                    var _d = decodeURIComponent(String(_q).trim());
+                    if (/^https?:\/\//i.test(_d)) return _d.replace(/\/+$/, '');
+                }
+            } catch (e) {}
+            try {
                 if (document.referrer) {
                     const o = new URL(document.referrer).origin;
                     if (o) return o;
@@ -5448,20 +5465,20 @@ async function searchInterviewer(event) {
                 };
                 
                 const viaWindow = postCompanyChatTrafficPayload(postData);
-                let viaBridge = false;
-                if (!viaWindow) {
-                    btn.textContent = '☁️ companychat 동기화 큐 기록...';
-                    viaBridge = await insertTrafficSubmissionSignal(postData);
-                    if (!viaBridge) {
-                        console.warn('[companychat 브리지] 실패 시 Supabase에 traffic_submission_signals 테이블·RLS(002 마이그레이션)를 확인하세요.');
-                    }
+                /** 모바일은 opener 없음·postMessage 누락이 잦아 Supabase 큐는 항상 남김(중복 적용은 H-채팅 쪽에서 무방) */
+                btn.textContent = '☁️ H-채팅 동기화 큐 기록...';
+                const viaBridge = await insertTrafficSubmissionSignal(postData);
+                if (!viaBridge) {
+                    console.warn('[companychat 브리지] 실패 시 Supabase에 traffic_submission_signals 테이블·RLS(002 마이그레이션)를 확인하세요.');
                 }
-                
+
                 let doneMsg = `✅ 전송 완료!\n\n${supervisorName}에게 전송되었습니다.\n\n파일이 업로드되었습니다.`;
                 if (!viaWindow) {
                     doneMsg += viaBridge
-                        ? '\n\n※ 유류비를 단독 탭에서 쓰셨습니다. H-채팅 교통비 탭을 열어 두면 곧 표에 반영됩니다.'
-                        : '\n\n※ companychat 연동 큐 기록에 실패했습니다. 관리자에게 문의하세요.';
+                        ? '\n\n※ 유류비를 단독 탭에서 쓰셨습니다. H-채팅을 열어 두면 곧 표에 반영됩니다.'
+                        : '\n\n※ H-채팅 연동 큐 기록에 실패했습니다. 관리자에게 문의하세요.';
+                } else if (viaBridge) {
+                    doneMsg += '\n\n※ H-채팅에 즉시 안 보이면 앱을 한 번 새로고침하거나 잠시 후 교통비 탭을 확인해 주세요.';
                 }
                 alert(doneMsg);
                 showToast('✅ 전송 완료!', 'success');
