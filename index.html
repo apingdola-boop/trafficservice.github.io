@@ -903,6 +903,33 @@
             width: 160px;
         }
 
+        /* 모바일: 날짜/교통수단/용무 잘림 방지 */
+        @media (max-width: 520px) {
+            .card-title-with-date {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .date-input-row {
+                width: 100%;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+
+            .meta-field {
+                min-width: 0;
+            }
+
+            #trip_month,
+            #trip_day,
+            #transport_method,
+            #trip_purpose {
+                width: 100%;
+                min-width: 0;
+            }
+        }
+
         /* 4열 비용 설정 그리드 (크게) */
         .cost-settings-grid-4 {
             display: grid;
