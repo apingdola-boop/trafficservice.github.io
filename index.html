@@ -1986,11 +1986,11 @@
                 <input type="text" id="start" placeholder="예: 서울시청, 강남역, 부산 해운대구">
             </div>
             <div class="waypoint-prefix-row">
-                <span class="waypoint-prefix-label" title="경유지 칸 placeholder 앞에 붙습니다">반복 단어</span>
+                <span class="waypoint-prefix-label" title="경유지 검색·계산 시 입력 앞에 자동으로 붙습니다 (이미 붙여 썼으면 그대로)">반복 단어</span>
                 <input type="text" id="waypoint-prefix" class="waypoint-prefix-input" placeholder="예: CU" maxlength="40" autocomplete="off">
             </div>
             <p style="margin: 6px 0 10px; font-size: 0.78rem; color: var(--text-secondary); line-height: 1.45;">
-                💡 <b>진행 부수</b>는 <b>경유지 개수</b>와 같게 잡힙니다. (경유지 1칸 = 1부 → 계산·엑셀에 자동 반영)
+                💡 <b>반복 단어</b>는 경유지 칸에 적은 내용 <b>앞에 붙여</b> 검색·계산합니다. <b>진행 부수</b>는 <b>경유지 개수</b>와 같습니다. (1칸 = 1부)
             </p>
             <div class="waypoint-container" id="waypoint-container"></div>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
@@ -3082,6 +3082,18 @@ async function searchInterviewer(event) {
             return (document.getElementById('waypoint-prefix')?.value || '').trim();
         }
 
+        /** 반복 단어를 경유지 검색어·계산용 주소에 반영 (placeholder만이 아니라 실제 쿼리에 붙임) */
+        function withWaypointPrefix(raw) {
+            const v = (raw || '').trim();
+            if (!v) return '';
+            const p = getWaypointPrefix().trim();
+            if (!p) return v;
+            const vl = v.toLowerCase();
+            const pl = p.toLowerCase();
+            if (vl.startsWith(pl)) return v;
+            return `${p} ${v}`.replace(/\s+/g, ' ').trim();
+        }
+
         /** 반복 단어 변경·경유지 삭제 후에도 placeholder가 맞도록 DOM 순서 기준으로 다시 붙임 */
         function refreshWaypointPlaceholders() {
             const container = document.getElementById('waypoint-container');
@@ -3223,14 +3235,14 @@ async function searchInterviewer(event) {
             let debounceId = null;
             inputEl.addEventListener('input', () => {
                 clearTimeout(debounceId);
-                const value = inputEl.value;
-                if (!value.trim()) {
+                const q = withWaypointPrefix(inputEl.value);
+                if (!q.trim()) {
                     listEl.innerHTML = '';
                     listEl.style.display = 'none';
                     return;
                 }
                 debounceId = setTimeout(async () => {
-                    const suggestions = await fetchWaypointSuggestions(value);
+                    const suggestions = await fetchWaypointSuggestions(q);
                     renderWaypointSuggestions(listEl, inputEl, suggestions);
                 }, 250);
             });
@@ -3261,10 +3273,10 @@ async function searchInterviewer(event) {
             waypointCount = 0;
         }
 
-        // 모든 경유지 가져오기 (수동 검색 전용 — 주소만)
+        // 모든 경유지 가져오기 (수동 검색 전용 — 주소만, 반복 단어 접두)
         function getWaypoints() {
             return Array.from(document.querySelectorAll('#waypoint-container .waypoint-input'))
-                .map(input => input.value.trim())
+                .map(input => withWaypointPrefix(input.value))
                 .filter(v => v);
         }
 
