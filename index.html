@@ -4328,43 +4328,36 @@ async function searchInterviewer(event) {
         }
 
         /**
-         * 자동 검색 전용: 부수만큼 동 라벨을 반복한 체인 + 총 km를 구간별로 나눠 엑셀 행과 동일하게 맞춤
+         * 자동 검색 전용: 경유 동은 부수와 관계없이 동(축약)당 한 칸만 — 연속 동일 동은 병합.
+         * 총 km는 그 체인 구간 수로만 나눔(엑셀·H-챗이 여러 행으로 쪼개지지 않게).
          * @returns {{ segments: Array<{from,to,distance,duration,toll}>, points: string[] }}
          */
         function buildAutoExcelExportPackage(waypointStops, startInput, endInput, roundedTotalKm) {
-            const startS = shortAdminDongLine(startInput);
-            const endS = shortAdminDongLine(endInput);
+            const startLabel = shortAdminDongLine(startInput) || (startInput || '').trim();
+            const endLabel = shortAdminDongLine(endInput) || (endInput || '').trim();
             const slots = [];
             for (const w of waypointStops) {
-                const bu = Math.max(0, Number(w.bu) || 0);
-                const short = shortAdminDongLine(w.address) || (w.address || '').trim();
-                if (bu <= 0) {
-                    if (w.address && String(w.address).trim()) slots.push(short);
-                    continue;
+                const addr = (w.address || '').trim();
+                if (!addr) continue;
+                const short = shortAdminDongLine(w.address) || addr;
+                if (slots.length === 0 || slots[slots.length - 1] !== short) {
+                    slots.push(short);
                 }
-                for (let j = 0; j < bu; j++) slots.push(short);
-            }
-            if (slots.length === 0 && waypointStops.length) {
-                waypointStops.forEach((w) => {
-                    if (w.address && String(w.address).trim()) {
-                        slots.push(shortAdminDongLine(w.address) || w.address.trim());
-                    }
-                });
             }
             if (slots.length === 0) {
                 const oneKm = Math.max(0, Math.round(Number(roundedTotalKm) || 0));
                 return {
                     segments: [{
-                        from: startS || startInput,
-                        to: endS || endInput,
+                        from: startLabel,
+                        to: endLabel,
                         distance: oneKm,
                         duration: 0,
                         toll: 0
                     }],
-                    points: [startS || startInput, endS || endInput]
+                    points: [startLabel, endLabel]
                 };
             }
-            const points = [startS || startInput, ...slots, endS || endInput];
+            const points = [startLabel, ...slots, endLabel];
             const nSegs = points.length - 1;
             const kms = distributeKmIntegers(roundedTotalKm, nSegs);
             const segments = kms.map((km, i) => ({
