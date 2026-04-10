@@ -2203,15 +2203,9 @@
                 <p style="font-size:0.88rem; color: var(--text-secondary); margin-bottom: 14px; line-height:1.5;">
                     <b>날짜·프로젝트·비용·영수증</b>는 <b>아래 공통 카드</b>에서 입력합니다. <b>경유 동 옆 부수</b>는 아래 옵션에 따라 <b>도로 샘플</b> 또는 <b>순회 모델</b>로 반영됩니다. (출발·도착은 보통 면접원 주소)
                 </p>
-                <div class="mini-grid">
-                    <div class="input-group">
-                        <label for="auto_start">출발(읍/면/동)</label>
-                        <input type="text" id="auto_start" placeholder="예: 부산 연제구 연산동">
-                    </div>
-                    <div class="input-group">
-                        <label for="auto_end">도착(읍/면/동)</label>
-                        <input type="text" id="auto_end" placeholder="예: 창원 진해구 여좌동">
-                    </div>
+                <div class="input-group">
+                    <label for="auto_start">출발(읍/면/동)</label>
+                    <input type="text" id="auto_start" placeholder="예: 부산 연제구 연산동">
                 </div>
                 <div class="auto-waypoint-actions" style="margin-top: 12px;">
                     <button class="btn-add-waypoint" type="button" onclick="addAutoWaypoint()">
@@ -2222,6 +2216,10 @@
                     </button>
                 </div>
                 <div id="auto-waypoint-container"></div>
+                <div class="input-group" style="margin-top: 12px;">
+                    <label for="auto_end">도착(읍/면/동)</label>
+                    <input type="text" id="auto_end" placeholder="예: 창원 진해구 여좌동">
+                </div>
                 <details id="auto-advanced-options" style="margin-top: 12px; border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; background: rgba(255,255,255,0.04); padding: 10px 12px;">
                     <summary style="cursor:pointer; color: var(--text-secondary); font-size: 0.92rem; user-select:none;">
                         고급 옵션(기본 숨김) 펼치기
