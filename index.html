@@ -1281,6 +1281,31 @@
             background: rgba(255, 255, 255, 0.04);
         }
 
+        .sidebar-add-collapsible {
+            margin: 12px 20px 0;
+        }
+
+        .sidebar-add-collapsible summary {
+            list-style: none;
+            cursor: pointer;
+            user-select: none;
+            padding: 10px 12px;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .sidebar-add-collapsible summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .sidebar-add-collapsible .sidebar-add-form {
+            margin: 8px 0 0;
+        }
+
         .sidebar-add-form h3 {
             font-size: 0.9rem;
             margin-bottom: 8px;
@@ -2026,24 +2051,26 @@
                 <p style="font-size: 0.85rem; margin-top: 10px;">검색 결과에서 출발지 또는<br>도착지 버튼을 선택하세요.</p>
             </div>
         </div>
-        <div class="sidebar-add-form">
-            <h3>➕ 면접원 추가</h3>
-            <div class="field-row full">
-                <a href="data/interviewer_example.xlsx" download class="download-link">예시 엑셀 다운로드</a>
+        <details class="sidebar-add-collapsible">
+            <summary>➕ 면접원 추가</summary>
+            <div class="sidebar-add-form">
+                <div class="field-row full">
+                    <a href="data/interviewer_example.xlsx" download class="download-link">예시 엑셀 다운로드</a>
+                </div>
+                <div class="field-row">
+                    <input type="text" id="add-interviewer-id" placeholder="ID">
+                    <input type="text" id="add-interviewer-name" placeholder="이름">
+                </div>
+                <div class="field-row full">
+                    <input type="text" id="add-interviewer-address" placeholder="주소">
+                </div>
+                <div class="field-row full">
+                    <input type="file" id="add-interviewer-excel" accept=".xlsx,.xls">
+                </div>
+                <button onclick="importInterviewersFromExcel()">엑셀로 면접원 추가</button>
+                <button onclick="addInterviewer()">면접원 추가하기</button>
             </div>
-            <div class="field-row">
-                <input type="text" id="add-interviewer-id" placeholder="ID">
-                <input type="text" id="add-interviewer-name" placeholder="이름">
-            </div>
-            <div class="field-row full">
-                <input type="text" id="add-interviewer-address" placeholder="주소">
-            </div>
-            <div class="field-row full">
-                <input type="file" id="add-interviewer-excel" accept=".xlsx,.xls">
-            </div>
-            <button onclick="importInterviewersFromExcel()">엑셀로 면접원 추가</button>
-            <button onclick="addInterviewer()">면접원 추가하기</button>
-        </div>
+        </details>
     </aside>
 
     <!-- 토스트 알림 -->
@@ -2076,16 +2103,18 @@
             </div>
         </div>
         <div class="recent-searches" id="project-recent-searches"></div>
-        <div class="sidebar-add-form">
-            <h3>➕ 프로젝트 추가</h3>
-            <div class="field-row">
-                <input type="text" id="add-project-number" placeholder="번호 (예: 2026-01-0001)">
+        <details class="sidebar-add-collapsible">
+            <summary>➕ 프로젝트 추가</summary>
+            <div class="sidebar-add-form">
+                <div class="field-row">
+                    <input type="text" id="add-project-number" placeholder="번호 (예: 2026-01-0001)">
+                </div>
+                <div class="field-row">
+                    <input type="text" id="add-project-name" placeholder="프로젝트명">
+                </div>
+                <button onclick="addProject()">프로젝트 추가하기</button>
             </div>
-            <div class="field-row">
-                <input type="text" id="add-project-name" placeholder="프로젝트명">
-            </div>
-            <button onclick="addProject()">프로젝트 추가하기</button>
-        </div>
+        </details>
         <div class="sidebar-results" id="sidebar-right-results">
             <div class="no-results">
                 <div class="icon">🔍</div>
