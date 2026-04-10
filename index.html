@@ -1990,15 +1990,15 @@
                 <input type="text" id="waypoint-prefix" class="waypoint-prefix-input" placeholder="예: CU" maxlength="40" autocomplete="off">
             </div>
             <p style="margin: 6px 0 10px; font-size: 0.78rem; color: var(--text-secondary); line-height: 1.45;">
-                💡 <b>반복 단어</b>를 넣은 뒤 <b>+ 경유지 추가</b>하면 새 칸에 그대로 입력됩니다. (이미 칸에 적은 내용 앞에도 검색·계산 시 붙습니다.) <b>진행 부수</b> = 경유지 개수 (1칸 = 1부)
+                💡 <b>반복 단어</b> 후 <b>+ 경유지 추가</b> 시 새 칸에 넣어집니다. 자동완성은 칸을 눌렀다고 뜨지 않고, <b>반복 단어 뒤에 글을 더 입력</b>하거나(없으면 한 글자부터) 주소·상호를 적을 때만 뜹니다. <b>진행 부수</b> = 경유지 개수 (1칸 = 1부)
             </p>
             <div class="waypoint-container" id="waypoint-container"></div>
-            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                <button class="btn-add-waypoint" onclick="addWaypoint()">
+            <div class="auto-waypoint-actions" style="margin-top: 10px;">
+                <button type="button" class="btn-add-waypoint" onclick="addWaypoint()">
                     <span>➕</span> 경유지 추가
                 </button>
-                <button class="btn-add-waypoint" onclick="clearAllWaypoints()" style="background: linear-gradient(135deg, rgba(220, 53, 69, 0.3) 0%, rgba(200, 35, 51, 0.3) 100%); border: 1px dashed rgba(220, 53, 69, 0.5);">
-                    <span>🗑️</span> 전체 삭제
+                <button type="button" class="btn-clear-auto" onclick="clearAllWaypoints()">
+                    <span>🗑️</span> 경유지 전체 삭제
                 </button>
             </div>
             <div class="input-group" style="margin-top: 20px;">
@@ -3094,7 +3094,22 @@ async function searchInterviewer(event) {
             return `${p} ${v}`.replace(/\s+/g, ' ').trim();
         }
 
-        /** 반복 단어 변경 시 placeholder 갱신 + 이미 입력된 경유지는 검색 쿼리 다시 맞춤 */
+        /** 자동완성: 포커스만으로는 안 뜨게 하고, 반복 단어만 칸에 있는 상태(추가 입력 없음)에서도 안 뜸 */
+        function shouldOpenWaypointSuggestions(raw) {
+            const v = (raw || '').trim();
+            if (!v) return false;
+            const p = getWaypointPrefix().trim();
+            if (!p) return true;
+            const pl = p.toLowerCase();
+            const vl = v.toLowerCase();
+            if (vl.startsWith(pl)) {
+                const after = v.slice(p.length).replace(/^\s+/, '');
+                return after.length > 0;
+            }
+            return true;
+        }
+
+        /** 반복 단어 변경 시 placeholder·캐시 키만 맞춤 (자동완성 목록은 열지 않음) */
         function onWaypointPrefixInput() {
             refreshWaypointPlaceholders();
             document.querySelectorAll('#waypoint-container .waypoint-input').forEach((inp) => {
@@ -3105,7 +3120,11 @@ async function searchInterviewer(event) {
                 if (hit && combo !== v && !placeCoordinateCache.has(combo)) {
                     placeCoordinateCache.set(combo, hit);
                 }
-                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                const listEl = inp.closest('.waypoint-input-wrapper')?.querySelector('.waypoint-suggestions');
+                if (listEl) {
+                    listEl.innerHTML = '';
+                    listEl.style.display = 'none';
+                }
             });
         }
 
@@ -3144,12 +3163,7 @@ async function searchInterviewer(event) {
             const input = div.querySelector('.waypoint-input');
             attachWaypointAutocomplete(input);
             const prefix = getWaypointPrefix();
-            if (prefix) {
-                input.value = prefix;
-                queueMicrotask(() =>
-                    input.dispatchEvent(new Event('input', { bubbles: true })),
-                );
-            }
+            if (prefix) input.value = prefix;
             refreshWaypointPlaceholders();
         }
 
@@ -3275,7 +3289,13 @@ async function searchInterviewer(event) {
             let debounceId = null;
             inputEl.addEventListener('input', () => {
                 clearTimeout(debounceId);
-                const q = withWaypointPrefix(inputEl.value);
+                const raw = inputEl.value;
+                if (!shouldOpenWaypointSuggestions(raw)) {
+                    listEl.innerHTML = '';
+                    listEl.style.display = 'none';
+                    return;
+                }
+                const q = withWaypointPrefix(raw);
                 if (!q.trim()) {
                     listEl.innerHTML = '';
                     listEl.style.display = 'none';
@@ -3288,16 +3308,7 @@ async function searchInterviewer(event) {
             });
 
             inputEl.addEventListener('focus', () => {
-                const q = withWaypointPrefix(inputEl.value);
-                if (q.trim()) {
-                    clearTimeout(debounceId);
-                    debounceId = setTimeout(async () => {
-                        const suggestions = await fetchWaypointSuggestions(q);
-                        renderWaypointSuggestions(listEl, inputEl, suggestions);
-                    }, 120);
-                } else if (listEl.childElementCount > 0) {
-                    listEl.style.display = 'block';
-                }
+                listEl.style.display = 'none';
             });
 
             inputEl.addEventListener('blur', () => {
@@ -3318,6 +3329,7 @@ async function searchInterviewer(event) {
             const container = document.getElementById('waypoint-container');
             container.innerHTML = '';
             waypointCount = 0;
+            refreshWaypointPlaceholders();
         }
 
         // 모든 경유지 가져오기 (수동 검색 전용 — 주소만, 반복 단어 접두)
