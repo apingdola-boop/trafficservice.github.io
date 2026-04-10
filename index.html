@@ -1810,17 +1810,23 @@
         /* 선택 알림 토스트 */
         .toast {
             position: fixed;
-            bottom: 30px;
+            bottom: 74px;
             left: 50%;
             transform: translateX(-50%) translateY(100px);
             background: var(--success-green);
             color: #000;
-            padding: 15px 30px;
-            border-radius: 12px;
+            padding: 10px 14px;
+            border-radius: 10px;
             font-weight: 500;
+            font-size: 0.9rem;
+            line-height: 1.35;
+            max-width: min(78vw, 360px);
+            box-sizing: border-box;
             z-index: 2000;
             opacity: 0;
             transition: all 0.3s ease;
+            pointer-events: none;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
         }
 
         .toast.show {
@@ -1835,6 +1841,15 @@
         .toast.toast-end {
             background: var(--accent-magenta);
             color: #fff;
+        }
+
+        @media (max-width: 800px) {
+            .toast {
+                bottom: max(84px, calc(72px + env(safe-area-inset-bottom, 0px)));
+                font-size: 0.85rem;
+                padding: 8px 12px;
+                max-width: min(86vw, 320px);
+            }
         }
 
         /* 상단 탭 */
@@ -3298,7 +3313,7 @@ async function searchInterviewer(event) {
             selectedInterviewer.name = name;
             
             // 토스트 알림 표시
-            showToast(`✅ ${name}님의 주소가 ${typeName} ${modeLabel}에 입력되었습니다!`, type);
+            showToast(`✅ ${name} ${typeName}지 입력 완료`, type);
             
             // 모바일: 출발지는 계속 선택할 수 있게 유지, 도착지 선택 시 자동 닫기
             if (window.innerWidth <= 800 && type === 'end') {
@@ -3320,9 +3335,10 @@ async function searchInterviewer(event) {
             if (type === 'start') toast.classList.add('toast-start');
             if (type === 'end') toast.classList.add('toast-end');
             
+            const hideDelay = (type === 'start' || type === 'end') ? 1400 : 2200;
             setTimeout(() => {
                 toast.classList.remove('show');
-            }, 3000);
+            }, hideDelay);
         }
 
         function getWaypointPrefix() {
