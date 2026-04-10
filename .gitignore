@@ -12,3 +12,6 @@ archive/python-naver-legacy/.env
 
 # 루트 임시·개인 엑셀 (data/ 등 하위는 제외되지 않음)
 /*.xlsx
+
+# 백업 원본 엑셀 폴더
+archive/raw-excel/*.xlsx
