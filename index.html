@@ -1740,6 +1740,42 @@
             display: block;
         }
 
+        /* 탭별로 화면 여러 구간(경로 → 공통 → 계산)을 같이 켜고 끔 */
+        .top-tab-section {
+            display: none;
+        }
+
+        .top-tab-section.active {
+            display: block;
+        }
+
+        .waypoint-prefix-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .waypoint-prefix-label {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            margin: 0;
+        }
+
+        .waypoint-prefix-input {
+            flex: 0 1 200px;
+            min-width: 90px;
+            max-width: 240px;
+            padding: 6px 10px;
+            font-size: 0.82rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-primary);
+        }
+
         .hint-box {
             margin-top: 12px;
             padding: 12px 14px;
@@ -1937,12 +1973,96 @@
         </header>
 
         <div class="top-tabs" role="tablist" aria-label="유류비 계산 방식 선택">
-            <button class="top-tab-btn active" id="tab-btn-manual" type="button" role="tab" aria-selected="true" aria-controls="tab-manual" onclick="setActiveTopTab('manual')">
+            <button class="top-tab-btn active" id="tab-btn-manual" type="button" role="tab" aria-selected="true" aria-controls="tab-manual-route" onclick="setActiveTopTab('manual')">
                 🧭 수동 검색(도로 기반)
             </button>
-            <button class="top-tab-btn" id="tab-btn-auto" type="button" role="tab" aria-selected="false" aria-controls="tab-auto" onclick="setActiveTopTab('auto')">
+            <button class="top-tab-btn" id="tab-btn-auto" type="button" role="tab" aria-selected="false" aria-controls="tab-auto-route" onclick="setActiveTopTab('auto')">
                 🗺️ 읍면동 자동(동 내부 직선 평균)
             </button>
+        </div>
+
+        <!-- 수동: 경로 (공통 카드보다 위) -->
+        <div class="top-tab-section top-tab-manual active" id="tab-manual-route" role="tabpanel" aria-labelledby="tab-btn-manual">
+        <div class="card">
+            <h2 class="card-title"><span class="icon">📍</span> 경로 설정 <span style="color: var(--text-secondary); font-size: 0.75rem; font-weight: 500;">(수동 검색 전용)</span></h2>
+            <div class="input-group">
+                <label for="start">출발지 <span style="color: var(--accent-cyan); font-size: 0.8rem;">(👤 면접원 검색 · 현재 탭 기준)</span></label>
+                <input type="text" id="start" placeholder="예: 서울시청, 강남역, 부산 해운대구">
+            </div>
+            <div class="waypoint-prefix-row">
+                <span class="waypoint-prefix-label" title="경유지 칸 placeholder 앞에 붙습니다">반복 단어</span>
+                <input type="text" id="waypoint-prefix" class="waypoint-prefix-input" placeholder="예: CU" maxlength="40" autocomplete="off">
+            </div>
+            <div class="waypoint-container" id="waypoint-container"></div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <button class="btn-add-waypoint" onclick="addWaypoint()">
+                    <span>➕</span> 경유지 추가
+                </button>
+                <button class="btn-add-waypoint" onclick="clearAllWaypoints()" style="background: linear-gradient(135deg, rgba(220, 53, 69, 0.3) 0%, rgba(200, 35, 51, 0.3) 100%); border: 1px dashed rgba(220, 53, 69, 0.5);">
+                    <span>🗑️</span> 전체 삭제
+                </button>
+            </div>
+            <div class="input-group" style="margin-top: 20px;">
+                <label for="end">도착지 <span style="color: var(--accent-magenta); font-size: 0.8rem;">(👤 면접원 검색 · 현재 탭 기준)</span></label>
+                <input type="text" id="end" placeholder="예: 인천공항, 대전역, 제주시">
+            </div>
+        </div>
+        </div>
+
+        <!-- 읍면동: 경로 (공통 카드보다 위) -->
+        <div class="top-tab-section top-tab-auto" id="tab-auto-route" role="tabpanel" aria-labelledby="tab-btn-auto">
+            <div class="card">
+                <h2 class="card-title"><span class="icon">🗺️</span> 읍면동 자동 계산</h2>
+                <p style="font-size:0.88rem; color: var(--text-secondary); margin-bottom: 14px; line-height:1.5;">
+                    <b>날짜·진행 부수·프로젝트·비용·영수증</b>는 <b>아래 공통 카드</b>에서 입력합니다. 여기서는 <b>읍/면/동 경로</b>와 <b>동 내부 순회</b>만 넣습니다.
+                </p>
+                <div class="mini-grid">
+                    <div class="input-group">
+                        <label for="auto_start">출발(읍/면/동)</label>
+                        <input type="text" id="auto_start" placeholder="예: 부산 연제구 연산동">
+                    </div>
+                    <div class="input-group">
+                        <label for="auto_end">도착(읍/면/동)</label>
+                        <input type="text" id="auto_end" placeholder="예: 창원 진해구 여좌동">
+                    </div>
+                </div>
+                <div class="auto-waypoint-actions" style="margin-top: 12px;">
+                    <button class="btn-add-waypoint" type="button" onclick="addAutoWaypoint()">
+                        <span>➕</span> 경유지(동) 추가
+                    </button>
+                    <button class="btn-clear-auto" type="button" onclick="clearAllAutoWaypoints()">
+                        <span>🗑️</span> 전체 삭제
+                    </button>
+                </div>
+                <div id="auto-waypoint-container"></div>
+                <div style="margin-top:12px; display:flex; align-items:center; gap:10px; color: var(--text-secondary); font-size:0.95rem;">
+                    <input type="checkbox" id="auto_return_home" checked>
+                    <label for="auto_return_home" style="cursor:pointer;">도착 후 집(출발지)으로 돌아오기</label>
+                </div>
+                <div class="input-group" style="margin-top: 12px;">
+                    <label for="auto_bu">도착 동 진행 부수</label>
+                    <input type="number" id="auto_bu" value="10" min="0" step="1">
+                </div>
+                <div class="input-group" style="margin-top: 10px;">
+                    <label for="auto_roam_factor">동 내부 평균 계수 <span style="font-weight:400; color: var(--text-secondary); font-size:0.85rem;">(순회 거리에 곱함)</span></label>
+                    <input type="number" id="auto_roam_factor" value="0.5" min="0" max="2" step="0.1">
+                    <div style="margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; color: var(--text-secondary); font-size:0.9rem;">
+                        <input type="checkbox" id="auto_roam_autotune" checked onchange="onAutoTuneToggle()">
+                        <label for="auto_roam_autotune" style="cursor:pointer;">자동 보정 (지역·부수 기반으로 계수 대신 사용)</label>
+                    </div>
+                </div>
+                <div class="input-group" style="margin-top: 14px;">
+                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:0.95rem;">
+                        <input type="checkbox" id="include_route_toll" checked style="width:18px; height:18px;">
+                        <span>예상 통행료 반영 (추천 경로·구간 합산)</span>
+                    </label>
+                    <p style="font-size:0.8rem; color: var(--text-secondary); margin-top:8px; line-height:1.45;">끄면 API 예상 통행료는 빼고, 아래 공통 카드의 <b>통행료</b>만 합산합니다. 켜면 예상액 + 그 입력이 함께 들어갑니다.</p>
+                </div>
+                <div class="hint-box" style="margin-top: 12px;">
+                    - <b>출발→도착</b>은 카카오 길찾기(도로거리)로 계산합니다.<br>
+                    - <b>경유 동·도착 동 내부</b>는 동 경계 끝-끝(직선)과 부수·자동 보정으로 순회 거리를 잡습니다.
+                </div>
+            </div>
         </div>
 
         <!-- 공통: 날짜·프로젝트·비용 (두 탭에서 동일 입력) -->
@@ -2068,36 +2188,7 @@
             </div>
         </div>
 
-        <div class="tab-panel active" id="tab-manual" role="tabpanel" aria-labelledby="tab-btn-manual">
-        <div class="card">
-            <h2 class="card-title"><span class="icon">📍</span> 경로 설정 <span style="color: var(--text-secondary); font-size: 0.75rem; font-weight: 500;">(수동 검색 전용)</span></h2>
-            <div class="input-group">
-                <label for="start">출발지 <span style="color: var(--accent-cyan); font-size: 0.8rem;">(👤 면접원 검색으로 자동 입력 가능)</span></label>
-                <input type="text" id="start" placeholder="예: 서울시청, 강남역, 부산 해운대구">
-            </div>
-
-            <div class="input-group" style="margin-top: 14px;">
-                <label for="waypoint-prefix">반복 단어 <span style="color: var(--text-secondary); font-size: 0.8rem;">(경유지 라벨 앞에 붙음, 비우면 생략)</span></label>
-                <input type="text" id="waypoint-prefix" placeholder="예: CU, 방문" maxlength="40" autocomplete="off">
-            </div>
-
-            <div class="waypoint-container" id="waypoint-container"></div>
-
-            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                <button class="btn-add-waypoint" onclick="addWaypoint()">
-                    <span>➕</span> 경유지 추가
-                </button>
-                <button class="btn-add-waypoint" onclick="clearAllWaypoints()" style="background: linear-gradient(135deg, rgba(220, 53, 69, 0.3) 0%, rgba(200, 35, 51, 0.3) 100%); border: 1px dashed rgba(220, 53, 69, 0.5);">
-                    <span>🗑️</span> 전체 삭제
-                </button>
-            </div>
-
-            <div class="input-group" style="margin-top: 20px;">
-                <label for="end">도착지 <span style="color: var(--accent-magenta); font-size: 0.8rem;">(👤 면접원 검색으로 자동 입력 가능)</span></label>
-                <input type="text" id="end" placeholder="예: 인천공항, 대전역, 제주시">
-            </div>
-        </div>
-
+        <div class="top-tab-section top-tab-manual active" id="tab-manual-actions" role="tabpanel" aria-labelledby="tab-btn-manual">
         <div class="error-message" id="error">
             <span>⚠️</span>
             <span id="error-text"></span>
@@ -2198,65 +2289,7 @@
         </div>
         </div>
 
-        <div class="tab-panel" id="tab-auto" role="tabpanel" aria-labelledby="tab-btn-auto">
-            <div class="card">
-                <h2 class="card-title"><span class="icon">🗺️</span> 읍면동 자동 계산</h2>
-                <p style="font-size:0.88rem; color: var(--text-secondary); margin-bottom: 14px; line-height:1.5;">
-                    <b>날짜·진행 부수·프로젝트·km당 유류비·통행료(추가)·식비·기타</b>는 위 <b>공통 카드</b>와 같습니다. 이 탭에서는 <b>읍/면/동 경로</b>와 <b>동 내부 순회</b>만 입력합니다.
-                </p>
-
-                <div class="mini-grid">
-                    <div class="input-group">
-                        <label for="auto_start">출발(읍/면/동)</label>
-                        <input type="text" id="auto_start" placeholder="예: 부산 연제구 연산동">
-                    </div>
-                    <div class="input-group">
-                        <label for="auto_end">도착(읍/면/동)</label>
-                        <input type="text" id="auto_end" placeholder="예: 창원 진해구 여좌동">
-                    </div>
-                </div>
-
-                <div class="auto-waypoint-actions" style="margin-top: 12px;">
-                    <button class="btn-add-waypoint" type="button" onclick="addAutoWaypoint()">
-                        <span>➕</span> 경유지(동) 추가
-                    </button>
-                    <button class="btn-clear-auto" type="button" onclick="clearAllAutoWaypoints()">
-                        <span>🗑️</span> 전체 삭제
-                    </button>
-                </div>
-                <div id="auto-waypoint-container"></div>
-
-                <div style="margin-top:12px; display:flex; align-items:center; gap:10px; color: var(--text-secondary); font-size:0.95rem;">
-                    <input type="checkbox" id="auto_return_home" checked>
-                    <label for="auto_return_home" style="cursor:pointer;">도착 후 집(출발지)으로 돌아오기</label>
-                </div>
-
-                <div class="input-group" style="margin-top: 12px;">
-                    <label for="auto_bu">도착 동 진행 부수</label>
-                    <input type="number" id="auto_bu" value="10" min="0" step="1">
-                </div>
-                <div class="input-group" style="margin-top: 10px;">
-                    <label for="auto_roam_factor">동 내부 평균 계수 <span style="font-weight:400; color: var(--text-secondary); font-size:0.85rem;">(순회 거리에 곱함)</span></label>
-                    <input type="number" id="auto_roam_factor" value="0.5" min="0" max="2" step="0.1">
-                    <div style="margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; color: var(--text-secondary); font-size:0.9rem;">
-                        <input type="checkbox" id="auto_roam_autotune" checked onchange="onAutoTuneToggle()">
-                        <label for="auto_roam_autotune" style="cursor:pointer;">자동 보정 (지역·부수 기반으로 계수 대신 사용)</label>
-                    </div>
-                </div>
-
-                <div class="input-group" style="margin-top: 14px;">
-                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:0.95rem;">
-                        <input type="checkbox" id="include_route_toll" checked style="width:18px; height:18px;">
-                        <span>예상 통행료 반영 (추천 경로·구간 합산)</span>
-                    </label>
-                    <p style="font-size:0.8rem; color: var(--text-secondary); margin-top:8px; line-height:1.45;">끄면 API 예상 통행료는 빼고, 위쪽 <b>통행료</b> 입력만 합산합니다. 켜면 예상액 + 위 통행료 입력이 함께 들어갑니다.</p>
-                </div>
-
-                <div class="hint-box" style="margin-top: 12px;">
-                    - <b>출발→도착</b>은 카카오 길찾기(도로거리)로 계산합니다.<br>
-                    - <b>경유 동·도착 동 내부</b>는 동 경계 끝-끝(직선)과 부수·자동 보정으로 순회 거리를 잡습니다.
-                </div>
-            </div>
+        <div class="top-tab-section top-tab-auto" id="tab-auto-actions" role="tabpanel" aria-labelledby="tab-btn-auto">
 
             <div class="error-message" id="auto-error" style="display:none;">
                 <span>⚠️</span>
@@ -2991,17 +3024,26 @@ async function searchInterviewer(event) {
             `;
         }
 
-        // 면접원 선택 시 출발지 또는 도착지에 주소 입력
+        // 면접원 선택 시 출발지 또는 도착지에 주소 입력 (현재 상단 탭: 수동 ↔ 읍면동)
         function selectInterviewer(id, name, address, type) {
-            const inputId = type === 'start' ? 'start' : 'end';
-            const input = document.getElementById(inputId);
-            const typeName = type === 'start' ? '출발지' : '도착지';
-            
-            // 기존 강조 효과 제거
-            document.getElementById('start').classList.remove('filled-start', 'filled-end');
-            document.getElementById('end').classList.remove('filled-start', 'filled-end');
-            
-            // 주소 입력 및 강조 효과
+            const useAuto = isAutoTopTabActive();
+            const startManual = document.getElementById('start');
+            const endManual = document.getElementById('end');
+            const startAuto = document.getElementById('auto_start');
+            const endAuto = document.getElementById('auto_end');
+
+            [startManual, endManual, startAuto, endAuto].forEach((el) => {
+                if (el) el.classList.remove('filled-start', 'filled-end');
+            });
+
+            const input = useAuto
+                ? (type === 'start' ? startAuto : endAuto)
+                : (type === 'start' ? startManual : endManual);
+            const modeLabel = useAuto ? '(읍면동 자동)' : '(수동 검색)';
+            const typeName = type === 'start' ? '출발' : '도착';
+
+            if (!input) return;
+
             input.value = address;
             input.classList.add(type === 'start' ? 'filled-start' : 'filled-end');
             
@@ -3010,7 +3052,7 @@ async function searchInterviewer(event) {
             selectedInterviewer.name = name;
             
             // 토스트 알림 표시
-            showToast(`✅ ${name}님의 주소가 ${typeName}에 입력되었습니다!`, type);
+            showToast(`✅ ${name}님의 주소가 ${typeName} ${modeLabel}에 입력되었습니다!`, type);
             
             // 모바일에서 사이드바 닫기
             if (window.innerWidth <= 800) {
@@ -3037,12 +3079,27 @@ async function searchInterviewer(event) {
             }, 3000);
         }
 
+        function getWaypointPrefix() {
+            return (document.getElementById('waypoint-prefix')?.value || '').trim();
+        }
+
+        /** 반복 단어 변경·경유지 삭제 후에도 placeholder가 맞도록 DOM 순서 기준으로 다시 붙임 */
+        function refreshWaypointPlaceholders() {
+            const container = document.getElementById('waypoint-container');
+            if (!container) return;
+            const prefix = getWaypointPrefix();
+            container.querySelectorAll('.waypoint-item').forEach((item, idx) => {
+                const inp = item.querySelector('.waypoint-input');
+                if (!inp) return;
+                const n = idx + 1;
+                inp.placeholder = prefix ? `${prefix} 경유지 ${n}` : `경유지 ${n}`;
+            });
+        }
+
         // 경유지 추가
         function addWaypoint() {
             waypointCount++;
             const container = document.getElementById('waypoint-container');
-            const prefix = (document.getElementById('waypoint-prefix')?.value || '').trim();
-            const labelCore = prefix ? `${prefix} 경유지 ${waypointCount}` : `경유지 ${waypointCount}`;
             const div = document.createElement('div');
             div.className = 'waypoint-item';
             div.id = `waypoint-${waypointCount}`;
@@ -3055,8 +3112,8 @@ async function searchInterviewer(event) {
             `;
             container.appendChild(div);
             const input = div.querySelector('.waypoint-input');
-            input.placeholder = labelCore;
             attachWaypointAutocomplete(input);
+            refreshWaypointPlaceholders();
         }
 
         // 자동완성에서 선택한 장소의 좌표를 저장하는 캐시
@@ -3191,6 +3248,7 @@ async function searchInterviewer(event) {
         // 경유지 삭제
         function removeWaypoint(id) {
             document.getElementById(`waypoint-${id}`)?.remove();
+            refreshWaypointPlaceholders();
         }
 
         // 경유지 전체 삭제
@@ -3802,8 +3860,6 @@ async function searchInterviewer(event) {
         function setActiveTopTab(tab) {
             const manualBtn = document.getElementById('tab-btn-manual');
             const autoBtn = document.getElementById('tab-btn-auto');
-            const manualPanel = document.getElementById('tab-manual');
-            const autoPanel = document.getElementById('tab-auto');
 
             const isManual = tab === 'manual';
 
@@ -3812,8 +3868,13 @@ async function searchInterviewer(event) {
             manualBtn.setAttribute('aria-selected', String(isManual));
             autoBtn.setAttribute('aria-selected', String(!isManual));
 
-            manualPanel.classList.toggle('active', isManual);
-            autoPanel.classList.toggle('active', !isManual);
+            document.querySelectorAll('.top-tab-manual').forEach((el) => el.classList.toggle('active', isManual));
+            document.querySelectorAll('.top-tab-auto').forEach((el) => el.classList.toggle('active', !isManual));
+        }
+
+        function isAutoTopTabActive() {
+            const autoBtn = document.getElementById('tab-btn-auto');
+            return !!(autoBtn && autoBtn.classList.contains('active'));
         }
 
         function showAutoError(message) {
@@ -4876,7 +4937,7 @@ async function searchInterviewer(event) {
             }
 
             if (!selectedInterviewer.id || String(selectedInterviewer.id).trim() === '' || selectedInterviewer.id === 'unknown') {
-                alert('⚠️ 면접원 검색에서 면접원을 선택해 주세요!\n(출발지/도착지에 주소가 들어가야 제출자 ID가 잡힙니다.)');
+                alert('⚠️ 면접원 검색에서 면접원을 선택해 주세요!\n(출발/도착 버튼으로 주소를 넣어야 제출자 ID가 잡힙니다. 읍면동 탭이면 읍/면/동 칸에 들어갑니다.)');
                 return;
             }
 
@@ -5116,6 +5177,8 @@ async function searchInterviewer(event) {
             document.getElementById('trip_day').value = today.getDate();
             loadBaseLists();
             onAutoTuneToggle();
+            const wp = document.getElementById('waypoint-prefix');
+            if (wp) wp.addEventListener('input', refreshWaypointPlaceholders);
         });
     </script>
 </body>
