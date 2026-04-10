@@ -1,0 +1,19 @@
+# Render.com Blueprint — 배포하면 https://서비스이름.onrender.com 주소가 유지됩니다.
+# GitHub 연결 → Blueprint → 이 저장소 선택
+#
+# • 저장소 루트가 traffic service 전체일 때: 아래 rootDir 유지
+# • company-chat 만 단독 저장소면: rootDir 줄 삭제하고 이 yaml 을 company-chat 폴더에 두세요.
+#
+# 커스텀 도메인: Dashboard → Custom Domains 연 후 Environment 에
+#   PUBLIC_BASE_URL = https://chat.내도메인.com
+services:
+  - type: web
+    name: company-chat
+    runtime: node
+    rootDir: company-chat
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+    # 데이터 영구 저장이 필요하면 유료 인스턴스 + Disk 추가 후 DATA_DIR 마운트 경로 설정

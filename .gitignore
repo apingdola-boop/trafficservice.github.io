@@ -3,3 +3,12 @@ node_modules/
 
 # 로컬에서만 쓰는 설정(선택): example 복사 후 아래 줄 주석 해제 → app-config.js 를 커밋에서 제외
 # js/app-config.js
+
+# 에디터·작업 스크랩 (루트)
+/_*.txt
+
+# 레거시 Python 로컬 비밀
+archive/python-naver-legacy/.env
+
+# 루트 임시·개인 엑셀 (data/ 등 하위는 제외되지 않음)
+/*.xlsx
