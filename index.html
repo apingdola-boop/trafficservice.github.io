@@ -2013,7 +2013,7 @@
             <div class="card">
                 <h2 class="card-title"><span class="icon">🗺️</span> 읍면동 자동 계산</h2>
                 <p style="font-size:0.88rem; color: var(--text-secondary); margin-bottom: 14px; line-height:1.5;">
-                    <b>날짜·프로젝트·비용·영수증</b>는 <b>아래 공통 카드</b>에서 입력합니다. <b>경유·도착 동 옆의 부수</b>로 동 내부 순회를 넣습니다.
+                    <b>날짜·프로젝트·비용·영수증</b>는 <b>아래 공통 카드</b>에서 입력합니다. <b>경유 동 옆 부수</b>만으로 방문지 순회 거리를 넣습니다. (출발·도착은 보통 면접원 주소)
                 </p>
                 <div class="mini-grid">
                     <div class="input-group">
@@ -2023,13 +2023,6 @@
                     <div class="input-group">
                         <label for="auto_end">도착(읍/면/동)</label>
                         <input type="text" id="auto_end" placeholder="예: 창원 진해구 여좌동">
-                    </div>
-                </div>
-                <div class="input-group" style="margin-top: 10px; max-width: 280px;">
-                    <label for="auto_end_bu">도착 동 진행 부수</label>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <input type="number" id="auto_end_bu" value="0" min="0" step="1" style="width:100px; padding:10px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.08); color: var(--text-primary);">
-                        <span style="color: var(--text-secondary); font-size:0.9rem;">부</span>
                     </div>
                 </div>
                 <div class="auto-waypoint-actions" style="margin-top: 12px;">
@@ -2058,7 +2051,8 @@
                 </div>
                 <div class="hint-box" style="margin-top: 12px;">
                     - <b>출발→도착</b>은 카카오 길찾기(도로거리)로 계산합니다.<br>
-                    - <b>경유 동·도착 동</b>마다 옆의 <b>부</b>를 넣으면 그만큼 동 내부 순회를 더합니다. (0이면 해당 동은 순회 제외)<br>
+                    - <b>경유 동</b> 옆 <b>부</b>만큼 동 내부 순회를 더합니다. (0이면 해당 경유는 순회 제외)<br>
+                    - OpenStreetMap에서 동 경계를 못 찾으면 <b>지름 약 2.2km 추정</b>으로 부수를 반영합니다.<br>
                     - 동 경계는 OpenStreetMap 검색을 쓰므로 <b>시·구·동</b>을 함께 적는 것이 잘 맞습니다.
                 </div>
             </div>
@@ -4099,6 +4093,9 @@ async function searchInterviewer(event) {
             }
         }
 
+        /** 동 경계 검색 실패 시에도 경유 부수가 거리에 반영되도록 쓰는 추정 지름(km) */
+        const FALLBACK_DONG_DIAMETER_KM = 2.2;
+
         // 지역(동 지름) + 부수 기반 자동 보정 모델
         // - perBuKm: 1부당 평균 순회거리(km)
         // - roamKm: 총 순회거리(km) (부수 증가 시 완만하게 증가하도록 지수 < 1)
@@ -4133,7 +4130,6 @@ async function searchInterviewer(event) {
             const autoTuneEnabled = document.getElementById('auto_roam_autotune')?.checked ?? true;
             const manualRoamFactor = Number(document.getElementById('auto_roam_factor').value || 0);
             const waypointStops = getAutoWaypointsWithBu();
-            const endBu = Math.max(0, parseInt(String(document.getElementById('auto_end_bu')?.value ?? '0').trim(), 10) || 0);
 
             const costPerKm = Number(document.getElementById('cost_per_km').value || 180);
             const manualTollExtra = Number(document.getElementById('toll_fee').value) || 0;
@@ -4152,10 +4148,6 @@ async function searchInterviewer(event) {
             }
             if (waypointStops.some(w => !Number.isFinite(w.bu) || w.bu < 0)) {
                 showAutoError('경유 동의 부수는 0 이상 숫자여야 합니다.');
-                return;
-            }
-            if (!Number.isFinite(endBu) || endBu < 0) {
-                showAutoError('도착 동 부수는 0 이상 숫자여야 합니다.');
                 return;
             }
             hideAutoError();
@@ -4181,23 +4173,22 @@ async function searchInterviewer(event) {
                 const appliedEstimatedToll = includeRouteToll ? estimatedRouteToll : 0;
                 const tollFeeTotal = appliedEstimatedToll + manualTollExtra;
 
-                // 3) 동 내부 순회: 경유 행·도착 행에 적은 부수만큼
-                const roamStops = [
-                    ...waypointStops.filter(w => (Number(w.bu) || 0) > 0).map(w => ({ name: w.address, bu: w.bu })),
-                    ...(endBu > 0 ? [{ name: endInput, bu: endBu }] : [])
-                ];
-                const sumBuForExcel = waypointStops.reduce((s, w) => s + Math.max(0, Number(w.bu) || 0), 0) + endBu;
+                // 3) 동 내부 순회: 경유 동에 적은 부수만 (출발·도착 면접원 주소는 제외)
+                const roamStops = waypointStops
+                    .filter(w => (Number(w.bu) || 0) > 0)
+                    .map(w => ({ name: w.address, bu: w.bu }));
+                const sumBuForExcel = waypointStops.reduce((s, w) => s + Math.max(0, Number(w.bu) || 0), 0);
 
                 let roamKmSum = 0;
                 let roamModelText = autoTuneEnabled ? '자동(지역/부수)' : `수동(계수=${manualRoamFactor})`;
 
-                const skippedRoam = [];
+                const fallbackRoamNames = [];
                 if (roamStops.length > 0) {
                     for (let i = 0; i < roamStops.length; i++) {
-                        const dKm = await tryGetDongDiameterKm(roamStops[i].name);
-                        if (dKm == null) {
-                            skippedRoam.push(roamStops[i].name);
-                            continue;
+                        let dKm = await tryGetDongDiameterKm(roamStops[i].name);
+                        if (dKm == null || dKm <= 0) {
+                            dKm = FALLBACK_DONG_DIAMETER_KM;
+                            fallbackRoamNames.push(roamStops[i].name);
                         }
                         const nBu = Number(roamStops[i].bu) || 0;
                         if (autoTuneEnabled) {
@@ -4206,8 +4197,8 @@ async function searchInterviewer(event) {
                             roamKmSum += dKm * manualRoamFactor * nBu;
                         }
                     }
-                    if (skippedRoam.length) {
-                        roamModelText += ` · 미조회 ${skippedRoam.length}곳(동 경계 검색 실패)`;
+                    if (fallbackRoamNames.length) {
+                        roamModelText += ` · 동경계 미확보 ${fallbackRoamNames.length}곳 → 지름 ${FALLBACK_DONG_DIAMETER_KM}km 추정`;
                     }
                 }
 
