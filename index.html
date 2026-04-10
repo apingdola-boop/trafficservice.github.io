@@ -18,11 +18,18 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <!-- Supabase JS Client for Storage -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/app-config.js"></script>
     <script>
-        // Supabase 설정
-        const SUPABASE_URL = 'https://fzuqztunicnptqqnuruv.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6dXF6dHVuaWNucHRxcW51cnV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU0MzUzNDYsImV4cCI6MjA4MTAxMTM0Nn0.xiihKzb6I6t1cTyekLzYr1CGEIHrP6Bxm_nG9Uue6c8';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        (function () {
+            var cfg = window.RouteCalcConfig;
+            if (!cfg || !cfg.supabaseUrl || !cfg.supabaseAnonKey) {
+                console.error('[ROUTE CALC] js/app-config.js 가 없거나 supabase 값이 비어 있습니다. js/app-config.example.js 를 참고하세요.');
+            }
+            window.supabaseClient = supabase.createClient(
+                (cfg && cfg.supabaseUrl) || '',
+                (cfg && cfg.supabaseAnonKey) || ''
+            );
+        })();
         /** H-채팅이 iframe/새 탭 URL에 붙인 origin — 모바일에서 referrer·opener 없을 때 postMessage 대상 */
         try {
             var _ccParams = new URLSearchParams(window.location.search);
@@ -1887,8 +1894,10 @@
     <!-- EmailJS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script>
-        (function() {
-            emailjs.init("PvDGT_c_Q2XrinAxz");
+        (function () {
+            var k = window.RouteCalcConfig && window.RouteCalcConfig.emailJsPublicKey;
+            if (k) emailjs.init(k);
+            else console.warn('[ROUTE CALC] EmailJS public key 없음 — app-config.js 확인');
         })();
     </script>
 </head>
@@ -2424,8 +2433,9 @@
     </div>
     
     <script>
-        // 카카오 REST API 키
-        const KAKAO_REST_API_KEY = '90002fe2ca1129c4281d84a37e00eb43';
+        const KAKAO_REST_API_KEY =
+            (window.RouteCalcConfig && window.RouteCalcConfig.kakaoRestApiKey) || '';
+        if (!KAKAO_REST_API_KEY) console.error('[ROUTE CALC] 카카오 REST API 키 없음 — js/app-config.js 확인');
         
         // 수동 등록 장소 (카카오 API에서 검색이 안 되는 장소들)
         const MANUAL_PLACES = {
