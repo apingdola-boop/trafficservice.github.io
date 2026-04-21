@@ -4669,12 +4669,42 @@ async function searchInterviewer(event) {
             return arr;
         }
 
+        /** 내비 원시 구간(km) 합을 정수 총km(순회 포함)에 맞추되, 가능한 한 실제 비율을 유지 */
+        function reconcileLegKmToTotal(rawKmArr, roundedTotal) {
+            const t = Math.max(0, Math.round(Number(roundedTotal) || 0));
+            const n = rawKmArr.length;
+            if (n === 0) return [];
+            const raw = rawKmArr.map((x) => Math.max(0, Number(x) || 0));
+            if (raw.reduce((a, b) => a + b, 0) < 1e-6) {
+                return distributeKmIntegers(t, n);
+            }
+            const out = raw.map((x) => Math.round(x));
+            let drift = t - out.reduce((a, b) => a + b, 0);
+            const byRawDesc = out.map((_, i) => i).sort((a, b) => raw[b] - raw[a] || b - a);
+            let k = 0;
+            while (drift > 0) {
+                out[byRawDesc[k % n]]++;
+                drift--;
+                k++;
+            }
+            const byRawAsc = out.map((_, i) => i).sort((a, b) => raw[a] - raw[b] || a - b);
+            k = 0;
+            while (drift < 0 && k < n * 64) {
+                const i = byRawAsc[k % n];
+                if (out[i] > 0) {
+                    out[i]--;
+                    drift++;
+                }
+                k++;
+            }
+            return out;
+        }
+
         /**
-         * 자동 검색 전용: 경유 동은 부수와 관계없이 동(축약)당 한 칸만 — 연속 동일 동은 병합.
-         * 총 km는 그 체인 구간 수로만 나눔(엑셀·H-챗이 여러 행으로 쪼개지지 않게).
+         * 자동 검색 전용(폴백): 총 km를 구간 수로만 균등 분배.
          * @returns {{ segments: Array<{from,to,distance,duration,toll}>, points: string[] }}
          */
-        function buildAutoExcelExportPackage(waypointStops, startInput, endInput, roundedTotalKm) {
+        function buildAutoExcelExportPackageFallback(waypointStops, startInput, endInput, roundedTotalKm) {
             const startLabel = shortAdminDongLine(startInput) || (startInput || '').trim();
             const endLabel = shortAdminDongLine(endInput) || (endInput || '').trim();
             const slots = [];
@@ -4708,6 +4738,121 @@ async function searchInterviewer(event) {
                 distance: km,
                 duration: 0,
                 toll: 0
+            }));
+            return { segments, points };
+        }
+
+        /**
+         * 자동 검색 전용: 경유 동은 부수와 관계없이 동(축약)당 한 칸만 — 연속 동일 동은 병합.
+         * 각 엑셀 행 km는 내비 구간(navSegments)을 coords 상 경유지 범위(wpCoordRanges)로 묶어 합산한다.
+         * 동내부 순회 등으로 총km가 도로 합보다 클 때는 reconcileLegKmToTotal로 정수 총km에 맞춘다.
+         * @param {Array<{address:string,bu:number}>} waypointStops
+         * @param {Array<{from:string,to:string,distance:number,duration:number,toll:number}>|null} navSegments
+         * @param {Array<{start:number,end:number}>|null} wpCoordRanges waypointStops 인덱스별 coords 인덱스(포함)
+         * @returns {{ segments: Array<{from,to,distance,duration,toll}>, points: string[] }}
+         */
+        function buildAutoExcelExportPackage(waypointStops, startInput, endInput, roundedTotalKm, navSegments, wpCoordRanges) {
+            const startLabel = shortAdminDongLine(startInput) || (startInput || '').trim();
+            const endLabel = shortAdminDongLine(endInput) || (endInput || '').trim();
+            const slots = [];
+            const groups = [];
+            for (let wi = 0; wi < waypointStops.length; wi++) {
+                const addr = (waypointStops[wi].address || '').trim();
+                if (!addr) continue;
+                const short = shortAdminDongLine(waypointStops[wi].address) || addr;
+                if (slots.length === 0 || slots[slots.length - 1] !== short) {
+                    slots.push(short);
+                    groups.push({ startWi: wi, endWi: wi });
+                } else {
+                    groups[groups.length - 1].endWi = wi;
+                }
+            }
+            if (slots.length === 0) {
+                if (navSegments && navSegments.length > 0 && wpCoordRanges && wpCoordRanges.length === waypointStops.length) {
+                    let dist = 0;
+                    let toll = 0;
+                    let dur = 0;
+                    for (const seg of navSegments) {
+                        dist += Number(seg.distance) || 0;
+                        toll += Number(seg.toll) || 0;
+                        dur += Number(seg.duration) || 0;
+                    }
+                    const km = reconcileLegKmToTotal([dist], roundedTotalKm)[0];
+                    return {
+                        segments: [{
+                            from: startLabel,
+                            to: endLabel,
+                            distance: km,
+                            duration: Math.round(dur),
+                            toll
+                        }],
+                        points: [startLabel, endLabel]
+                    };
+                }
+                const oneKm = Math.max(0, Math.round(Number(roundedTotalKm) || 0));
+                return {
+                    segments: [{
+                        from: startLabel,
+                        to: endLabel,
+                        distance: oneKm,
+                        duration: 0,
+                        toll: 0
+                    }],
+                    points: [startLabel, endLabel]
+                };
+            }
+            if (!navSegments || !navSegments.length || !wpCoordRanges || wpCoordRanges.length !== waypointStops.length) {
+                return buildAutoExcelExportPackageFallback(waypointStops, startInput, endInput, roundedTotalKm);
+            }
+
+            /** coords[fromCoordIdx]에서 coords[endCoordIdx]까지(끝 좌표 포함) 이동에 해당하는 내비 구간 합 */
+            function sumNavCoordRange(fromCoordIdx, endCoordIdx) {
+                let dist = 0;
+                let toll = 0;
+                let dur = 0;
+                for (let k = fromCoordIdx; k < endCoordIdx; k++) {
+                    const seg = navSegments[k];
+                    if (!seg) continue;
+                    dist += Number(seg.distance) || 0;
+                    toll += Number(seg.toll) || 0;
+                    dur += Number(seg.duration) || 0;
+                }
+                return { dist, toll, dur };
+            }
+
+            const points = [startLabel, ...slots, endLabel];
+            const rawDist = [];
+            const rawToll = [];
+            const rawDur = [];
+            let prevEndCoord = 0;
+
+            for (let gi = 0; gi < groups.length; gi++) {
+                const g = groups[gi];
+                const r = wpCoordRanges[g.endWi];
+                if (!r || r.end == null || r.start == null) {
+                    return buildAutoExcelExportPackageFallback(waypointStops, startInput, endInput, roundedTotalKm);
+                }
+                const endCoord = r.end;
+                const pack = sumNavCoordRange(prevEndCoord, endCoord);
+                rawDist.push(pack.dist);
+                rawToll.push(pack.toll);
+                rawDur.push(pack.dur);
+                prevEndCoord = endCoord;
+            }
+
+            const lastCoordIdx = navSegments.length;
+            const lastPack = sumNavCoordRange(prevEndCoord, lastCoordIdx);
+            rawDist.push(lastPack.dist);
+            rawToll.push(lastPack.toll);
+            rawDur.push(lastPack.dur);
+
+            const legKm = reconcileLegKmToTotal(rawDist, roundedTotalKm);
+            const segments = legKm.map((km, i) => ({
+                from: points[i],
+                to: points[i + 1],
+                distance: km,
+                duration: Math.round(rawDur[i] || 0),
+                toll: rawToll[i] || 0
             }));
             return { segments, points };
         }
@@ -4758,12 +4903,15 @@ async function searchInterviewer(event) {
                 let roamKmSum = 0;
                 let roamModelText = autoTuneEnabled ? '자동(지역/부수)' : `수동(계수=${manualRoamFactor})`;
                 const fallbackRoamNames = [];
+                let wpCoordRanges = null;
 
                 if (useRoadSample) {
                     coords = [await searchAddress(startInput)];
+                    wpCoordRanges = new Array(waypointStops.length);
                     for (let wi = 0; wi < waypointStops.length; wi++) {
                         const w = waypointStops[wi];
                         const bu = Number(w.bu) || 0;
+                        const wpStart = coords.length;
                         if (bu > 0) {
                             const center = await searchAddress(w.address);
                             const k = Math.min(Math.max(2, bu), AUTO_ROAD_SAMPLE_MAX);
@@ -4788,6 +4936,7 @@ async function searchInterviewer(event) {
                         } else {
                             coords.push(await searchAddress(w.address));
                         }
+                        wpCoordRanges[wi] = { start: wpStart, end: coords.length - 1 };
                     }
                     coords.push(await searchAddress(endInput));
                     roamModelText = '도로 샘플(인근 장소·최대 ' + AUTO_ROAD_SAMPLE_MAX + '지점/동)';
@@ -4800,6 +4949,7 @@ async function searchInterviewer(event) {
                 } else {
                     const moveAddresses = [startInput, ...waypointAddresses, endInput];
                     coords = await Promise.all(moveAddresses.map((addr) => searchAddress(addr)));
+                    wpCoordRanges = waypointStops.map((_, wi) => ({ start: 1 + wi, end: 1 + wi }));
                     if (roamStops.length > 0) {
                         for (let i = 0; i < roamStops.length; i++) {
                             let dKm = await tryGetDongDiameterKm(roamStops[i].name);
@@ -4909,8 +5059,8 @@ async function searchInterviewer(event) {
                     : '';
                 const projectName = (document.getElementById('project_name').value || '').trim();
 
-                // 엑셀·H-챗: 구·동 축약 + 부수만큼 방문 행 + 총 km를 구간별 정수로 분배 (내비 원시 구간 대신)
-                const excelPack = buildAutoExcelExportPackage(waypointStops, startInput, endInput, roundedTotalKm);
+                // 엑셀·H-챗: 구·동 축약 행마다 내비 구간 km 합산(동내부 순회 등 총km 보정은 reconcile)
+                const excelPack = buildAutoExcelExportPackage(waypointStops, startInput, endInput, roundedTotalKm, segmentDistances, wpCoordRanges);
 
                 // duration은 현재 탭2에서 별도 합산하지 않으므로 0/빈값 처리 (엑셀은 주로 거리/비용 사용)
                 lastCalculationResult = {
